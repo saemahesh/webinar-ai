@@ -736,8 +736,6 @@ This document outlines the **step-by-step, phased development approach** for bui
 - [ ] Time-based message triggers
 - [ ] Message type system (welcome, poll, offer)
 - [ ] Action button integration
-- [ ] Message priority handling
-- [ ] Conditional message display
 
 #### Message Types
 - [ ] Welcome messages

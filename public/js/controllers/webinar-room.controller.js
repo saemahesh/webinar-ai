@@ -26,6 +26,7 @@ angular.module('webinarApp')
     $scope.videoError = false; // FORCE: Never allow video error to block display
     $scope.attendeeCount = 0;
     $scope.isWebinarLive = false;
+    $scope.showResumeButton = false; // Resume button control - only show when needed
     
     // Host control panel integration
     $scope.isHost = false;
@@ -73,10 +74,25 @@ angular.module('webinarApp')
                 video.setAttribute('src', videoSrc);
                 video.src = videoSrc;
                 
-                // Force reload and try to play
+                // Force reload and try to play with smart resume button logic
                 video.load();
                 setTimeout(() => {
-                  video.play().catch(e => console.log('Auto-play prevented:', e));
+                  // Ensure video is unmuted for audio
+                  video.muted = false;
+                  console.log('🔊 Video unmuted for auto-play attempt');
+                  
+                  video.play()
+                    .then(() => {
+                      console.log('✅ Auto-play successful - hiding resume button');
+                      $scope.showResumeButton = false;
+                      $scope.isVideoLoaded = true;
+                      $scope.$apply();
+                    })
+                    .catch(e => {
+                      console.log('❌ Auto-play prevented by browser - showing resume button');
+                      $scope.showResumeButton = true;
+                      $scope.$apply();
+                    });
                 }, 100);
               }
             }, 100);
@@ -121,14 +137,17 @@ angular.module('webinarApp')
       if (now < startTime) {
         $scope.roomState.status = 'waiting';
         $scope.isWebinarLive = false;
+        $scope.showResumeButton = false; // Hide resume during waiting
         console.log('Webinar is in waiting state');
       } else if (now >= startTime && now < endTime) {
         $scope.roomState.status = 'live';
         $scope.isWebinarLive = true;
+        $scope.checkVideoState(); // Check if resume button is needed when webinar goes live
         console.log('Webinar is live');
       } else {
         $scope.roomState.status = 'ended';
         $scope.isWebinarLive = false;
+        $scope.showResumeButton = false; // Hide resume when ended
         console.log('Webinar has ended');
       }
     };
@@ -140,6 +159,7 @@ angular.module('webinarApp')
       $scope.initializeChat();
       $scope.startAttendeeSimulation();
       $scope.forceVideoDisplay(); // FORCE: Always ensure video is visible
+      $scope.checkVideoState(); // Check if resume button should be shown
       $scope.isLoading = false;
       
       // FORCE: Ensure video src is set after Angular digest
@@ -218,14 +238,23 @@ angular.module('webinarApp')
     $scope.playVideo = function() {
       const video = document.getElementById('webinarVideo');
       if (video) {
+        // Ensure video is unmuted for audio playback
+        video.muted = false;
+        console.log('Video unmuted and attempting to play...');
+        
         video.play()
           .then(function() {
             $scope.isVideoLoaded = true;
             $scope.videoError = false; // FORCE: Reset video error on successful play
-            console.log('Video started successfully');
+            $scope.showResumeButton = false; // Hide resume button when video plays successfully
+            console.log('Video started successfully with audio enabled');
+            $scope.$apply();
           })
           .catch(function(error) {
             console.error('Video play error:', error);
+            // Show resume button if play fails
+            $scope.showResumeButton = true;
+            $scope.$apply();
             // Don't set videoError = true, just log the error
             console.log('Video play failed but keeping video element visible');
           });
@@ -237,6 +266,38 @@ angular.module('webinarApp')
       if (video) {
         video.pause();
       }
+    };
+
+    // Resume video function - smarter about when to show resume button
+    $scope.resumeVideo = function() {
+      console.log('Resume video called');
+      $scope.showResumeButton = false;
+      $scope.playVideo();
+    };
+
+    // Smart video state check - only show resume when actually needed
+    $scope.checkVideoState = function() {
+      $timeout(function() {
+        const video = document.getElementById('webinarVideo');
+        if (video && $scope.roomState.status === 'live') {
+          console.log('🎥 Checking video state:', {
+            paused: video.paused,
+            ended: video.ended,
+            readyState: video.readyState,
+            networkState: video.networkState
+          });
+          
+          // Only show resume button if video is paused and webinar is live
+          if (video.paused && !video.ended && video.readyState > 0) {
+            console.log('📹 Video is paused, showing resume button');
+            $scope.showResumeButton = true;
+          } else {
+            console.log('▶️ Video is playing or ready to play, hiding resume button');
+            $scope.showResumeButton = false;
+          }
+          $scope.$apply();
+        }
+      }, 1000);
     };
     
     // Initialize chat system

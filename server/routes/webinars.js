@@ -141,7 +141,7 @@ router.put('/:id', authenticate, (req, res) => {
       return res.status(404).json({ error: 'Webinar not found or access denied' });
     }
     
-    const { title, description, scheduledDate, duration, maxAttendees, requireRegistration, customFields, confirmationMessage, registrationDeadline } = req.body;
+  const { title, description, scheduledDate, duration, maxAttendees, requireRegistration, customFields, confirmationMessage, registrationDeadline, scheduledMessages } = req.body;
     
     // Update webinar
     const updatedWebinar = {
@@ -155,7 +155,9 @@ router.put('/:id', authenticate, (req, res) => {
       customFields: customFields !== undefined ? customFields : webinars[webinarIndex].customFields || [],
       confirmationMessage: confirmationMessage !== undefined ? confirmationMessage : webinars[webinarIndex].confirmationMessage || '',
       registrationDeadline: registrationDeadline !== undefined ? registrationDeadline : webinars[webinarIndex].registrationDeadline || null,
-      updatedAt: new Date().toISOString()
+  updatedAt: new Date().toISOString(),
+  // Allow updating scheduledMessages optionally
+  scheduledMessages: Array.isArray(scheduledMessages) ? scheduledMessages : (webinars[webinarIndex].scheduledMessages || [])
     };
     
     webinars[webinarIndex] = updatedWebinar;
@@ -303,7 +305,8 @@ router.get('/:id', authenticate, (req, res) => {
     // Add videoPath mapping for frontend compatibility
     const webinarResponse = {
       ...webinar,
-      videoPath: webinar.videoFile ? `/${webinar.videoFile.path}` : (webinar.videoPath || null)
+      videoPath: webinar.videoFile ? `/${webinar.videoFile.path}` : (webinar.videoPath || null),
+      scheduledMessages: webinar.scheduledMessages || []
     };
     
     console.log('Webinar found:', webinar.title);
@@ -527,6 +530,53 @@ router.put('/:id/chat-settings', authenticate, (req, res) => {
     
   } catch (error) {
     console.error('Error updating chat settings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /api/webinars/:id/scheduled-messages
+ * Save automated chat messages to be delivered at specific offsets (host only)
+ */
+router.put('/:id/scheduled-messages', authenticate, (req, res) => {
+  try {
+    const webinarId = req.params.id;
+    const { scheduledMessages } = req.body || {};
+
+    if (!Array.isArray(scheduledMessages)) {
+      return res.status(400).json({ error: 'scheduledMessages must be an array' });
+    }
+
+    const webinars = readWebinars();
+    const idx = webinars.findIndex(w => w.id === webinarId);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'Webinar not found' });
+    }
+
+    const webinar = webinars[idx];
+    // Check host permissions
+    if (req.user.role !== 'host' || webinar.hostEmail !== req.user.email) {
+      return res.status(403).json({ error: 'Only the webinar host can update scheduled messages' });
+    }
+
+    // Normalize messages
+    const norm = scheduledMessages.map((m) => ({
+      id: String(m.id || ('sm_' + Date.now() + '_' + Math.random().toString(36).slice(2))),
+      kind: m.kind || m.type || 'text',
+      text: m.text || '',
+      atSeconds: Number.isFinite(Number(m.atSeconds)) ? Number(m.atSeconds) : 0,
+      imageUrl: m.imageUrl || undefined,
+      caption: m.caption || undefined,
+      buttons: Array.isArray(m.buttons) ? m.buttons.filter(b => b && b.label && b.url) : []
+    }));
+
+    webinars[idx].scheduledMessages = norm;
+    webinars[idx].updatedAt = new Date().toISOString();
+    writeWebinars(webinars);
+
+    return res.json({ success: true, scheduledMessages: norm });
+  } catch (error) {
+    console.error('Error updating scheduled messages:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

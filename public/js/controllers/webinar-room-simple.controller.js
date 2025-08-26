@@ -1,4 +1,4 @@
-// Simple WebinarRoomController for testing
+// Webinar Room Controller (attendee + lightweight host tools)
 angular.module('webinarApp')
 .controller('WebinarRoomController', ['$scope', '$stateParams', '$state', '$http', '$timeout', '$interval', 'ToastService', 'AuthService', '$sce',
   function($scope, $stateParams, $state, $http, $timeout, $interval, ToastService, AuthService, $sce) {
@@ -16,7 +16,7 @@ angular.module('webinarApp')
     $scope.isVideoLoaded = false;
     $scope.videoError = false;
     $scope.attendeeCount = 0;
-    $scope.isWebinarLive = true; // Force enable chat for testing
+  $scope.isWebinarLive = false; // Only true when scheduled start is reached
     $scope.isLeavingRoom = false; // Track if user is leaving
     $scope.showResumeButton = false; // Resume button state
     $scope.hasUserResumed = false; // Track if user has manually resumed
@@ -61,15 +61,13 @@ angular.module('webinarApp')
     
     console.log('WebinarRoomController - Chat enabled for testing:', $scope.isWebinarLive);
     
-    // Add test message to verify chat is working
+    // Initial system message (safe before start)
     $scope.chatMessages.push({
-      sender: 'Host',
-      message: 'Welcome to the webinar! Chat is enabled.',
+      sender: 'System',
+      message: 'Welcome! The webinar will begin shortly.',
       timestamp: new Date(),
-      isSystem: false
+      isSystem: true
     });
-    
-    console.log('Initial chat messages:', $scope.chatMessages);
     
     // Host control panel integration
     $scope.isHost = false;
@@ -83,6 +81,32 @@ angular.module('webinarApp')
       timeToStart: 0
     };
 
+    // Scheduled automated messages (host-configured)
+    $scope.scheduledMessages = [];
+    const deliveredKey = (id) => `delivered_${$scope.webinarId}_${id}`;
+    
+    // Clear delivery state when webinar data loads to ensure messages work on subsequent visits
+    $scope.clearPreviousDeliveryState = function() {
+      try {
+        // Clear all delivered message flags for this webinar
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.startsWith(`delivered_${$scope.webinarId}_`)) {
+            sessionStorage.removeItem(key);
+          }
+        });
+        console.log('Cleared previous delivery state for webinar:', $scope.webinarId);
+      } catch (e) {
+        console.log('Could not clear delivery state:', e);
+      }
+    };
+    
+    function hasDelivered(id) {
+      try { return sessionStorage.getItem(deliveredKey(id)) === '1'; } catch (_) { return false; }
+    }
+    function markDelivered(id) {
+      try { sessionStorage.setItem(deliveredKey(id), '1'); } catch (_) {}
+    }
+
     // Countdown interval ref
     let countdownInterval = null;
 
@@ -94,7 +118,24 @@ angular.module('webinarApp')
           const now = new Date();
           const startTime = new Date($scope.webinar.scheduledDate);
           $scope.roomState.timeToStart = Math.max(0, startTime.getTime() - now.getTime());
-          if ($scope.roomState.status !== 'waiting' || $scope.roomState.timeToStart <= 0) {
+
+          // When countdown hits zero, flip to LIVE immediately (don't wait for the 5s monitor)
+          if ($scope.roomState.timeToStart <= 0 && $scope.roomState.status === 'waiting') {
+            $scope.roomState.status = 'live';
+            $scope.isWebinarLive = true;
+            $scope.webinarStatus = 'live';
+            stopCountdown();
+            // Give Angular a tick to render the <video>, then start playback
+            $timeout(function() {
+              if ($scope.webinar && $scope.webinar.videoPath) {
+                $scope.playVideo();
+              }
+            }, 300);
+            return;
+          }
+
+          // Safety: if state already changed elsewhere, stop this countdown
+          if ($scope.roomState.status !== 'waiting') {
             stopCountdown();
           }
         } catch (e) { /* ignore */ }
@@ -109,7 +150,7 @@ angular.module('webinarApp')
     }
 
     // Compute a trusted video URL for the template (used by ng-src)
-    $scope.getVideoUrl = function() {
+  $scope.getVideoUrl = function() {
       try {
         var path = $scope.webinar && $scope.webinar.videoPath ? $scope.webinar.videoPath : null;
         if (!path) {
@@ -136,14 +177,16 @@ angular.module('webinarApp')
       console.log('User authenticated:', AuthService.isLoggedIn());
       
       // Simplified approach - go directly to public API for attendees
-      if (!AuthService.isLoggedIn()) {
+  if (!AuthService.isLoggedIn()) {
         console.log('User not authenticated, using public API directly');
         $http.get(`/api/public/webinars/${$scope.webinarId}`)
           .then(function(response) {
             console.log('Public API response:', response.data);
             $scope.webinar = response.data.webinar || response.data;
-            
-            if ($scope.webinar) {
+            // Load any scheduled automated messages (public information for timing only)
+            $scope.scheduledMessages = Array.isArray($scope.webinar.scheduledMessages) ? $scope.webinar.scheduledMessages : [];
+            // Clear previous delivery state to ensure messages work on subsequent visits
+            $scope.clearPreviousDeliveryState();            if ($scope.webinar) {
               $scope.roomState.webinarStartTime = new Date($scope.webinar.scheduledDate);
               
               // Check if webinar/video has ended before allowing entry (30 min video duration)
@@ -165,6 +208,7 @@ angular.module('webinarApp')
 
               // Set computed, trusted video URL for template binding
               $scope.videoUrl = $scope.getVideoUrl();
+              $scope.startScheduledMessageWatcher();
             } else {
               ToastService.error('Webinar not found');
               $state.go('join', { webinarId: $scope.webinarId });
@@ -178,12 +222,13 @@ angular.module('webinarApp')
       } else {
         console.log('User authenticated, trying host API');
         // Authenticated user - try host API
-        $http.get(`/api/webinars/${$scope.webinarId}`)
+    $http.get(`/api/webinars/${$scope.webinarId}`)
           .then(function(response) {
             console.log('Host API response:', response.data);
             $scope.webinar = response.data.webinar || response.data;
-            
-            if ($scope.webinar) {
+            $scope.scheduledMessages = Array.isArray($scope.webinar.scheduledMessages) ? $scope.webinar.scheduledMessages : [];
+            // Clear previous delivery state to ensure messages work on subsequent visits
+            $scope.clearPreviousDeliveryState();            if ($scope.webinar) {
               $scope.roomState.webinarStartTime = new Date($scope.webinar.scheduledDate);
               
               // Check if webinar/video has ended before allowing entry (30 min video duration)
@@ -205,6 +250,7 @@ angular.module('webinarApp')
 
               // Set computed, trusted video URL for template binding
               $scope.videoUrl = $scope.getVideoUrl();
+              $scope.startScheduledMessageWatcher();
             } else {
               ToastService.error('Webinar not found');
               $state.go('join', { webinarId: $scope.webinarId });
@@ -213,12 +259,13 @@ angular.module('webinarApp')
           .catch(function(error) {
             console.error('Host API error, falling back to public:', error);
             // Fallback to public API
-            $http.get(`/api/public/webinars/${$scope.webinarId}`)
+      $http.get(`/api/public/webinars/${$scope.webinarId}`)
               .then(function(response) {
                 console.log('Public API fallback response:', response.data);
                 $scope.webinar = response.data.webinar || response.data;
-                
-                if ($scope.webinar) {
+                $scope.scheduledMessages = Array.isArray($scope.webinar.scheduledMessages) ? $scope.webinar.scheduledMessages : [];
+                // Clear previous delivery state to ensure messages work on subsequent visits
+                $scope.clearPreviousDeliveryState();                if ($scope.webinar) {
                   $scope.roomState.webinarStartTime = new Date($scope.webinar.scheduledDate);
                   
                   // Check if webinar/video has ended before allowing entry (30 min video duration)
@@ -240,6 +287,7 @@ angular.module('webinarApp')
 
                   // Set computed, trusted video URL for template binding
                   $scope.videoUrl = $scope.getVideoUrl();
+                  $scope.startScheduledMessageWatcher();
                 } else {
                   ToastService.error('Webinar not found');
                   $state.go('join', { webinarId: $scope.webinarId });
@@ -269,7 +317,7 @@ angular.module('webinarApp')
     };
     
     // Check webinar status (waiting, live, ended) with IST timezone support
-    $scope.checkWebinarStatus = function() {
+  $scope.checkWebinarStatus = function() {
       // Get current time in IST
       const now = new Date();
       console.log('Current UTC time:', now.toISOString());
@@ -292,7 +340,7 @@ angular.module('webinarApp')
       console.log('Time difference from start (minutes):', Math.round(timeDiff / (1000 * 60)));
       console.log('Time difference from end (minutes):', Math.round(endTimeDiff / (1000 * 60)));
       
-      if (now < startTime) {
+  if (now < startTime) {
         $scope.roomState.status = 'waiting';
         $scope.isWebinarLive = false;
         $scope.webinarStatus = 'upcoming';
@@ -331,9 +379,9 @@ angular.module('webinarApp')
           return;
         }
         
-        $scope.roomState.status = 'live';
-        $scope.isWebinarLive = true;
-        $scope.webinarStatus = 'live';
+    $scope.roomState.status = 'live';
+    $scope.isWebinarLive = true;
+    $scope.webinarStatus = 'live';
         console.log('Webinar is LIVE - started', Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60)), 'minutes ago');
         
         // Auto-play video when webinar goes live (handled later in initialize/start monitoring)
@@ -341,8 +389,8 @@ angular.module('webinarApp')
           if ($scope.webinar.videoPath && !$scope.videoError) {
             console.log('Webinar is live. Video will be started by initialize/monitor when element is present.');
             // No direct call here to avoid races before element exists
-            // Announce go-live as Host
-            $scope.chatMessages.push({ sender: 'Host', message: 'We are live. Thanks for joining!', timestamp: new Date(), isSystem: false });
+      // Optional: announce go-live as system message
+      $scope.chatMessages.push({ sender: 'System', message: 'We are live. Thanks for joining!', timestamp: new Date(), isSystem: true });
           }
         }, 1000);
       } else {
@@ -357,12 +405,7 @@ angular.module('webinarApp')
         return;
       }
       
-      // For testing purposes - enable chat in all states except ended
-      if ($scope.webinarStatus !== 'ended') {
-        $scope.isWebinarLive = true;
-        console.log('Chat enabled for testing - isWebinarLive:', $scope.isWebinarLive);
-      }
-      
+  // Do NOT force-enable chat before start
       $scope.isLoading = false;
     };
 
@@ -411,12 +454,18 @@ angular.module('webinarApp')
       console.log('chat.newMessage value:', $scope.chat.newMessage);
       console.log('chat.newMessage type:', typeof $scope.chat.newMessage);
       
+      if ($scope.roomState.status !== 'live') {
+        ToastService.warning('Chat will be available when the webinar starts');
+        return;
+      }
+
       if ($scope.chat.newMessage && $scope.chat.newMessage.trim()) {
         const message = {
           sender: $scope.attendee ? $scope.attendee.name : ($scope.currentUser ? $scope.currentUser.name : 'Anonymous'),
           message: $scope.chat.newMessage.trim(),
           timestamp: new Date(),
-          isSystem: false
+          isSystem: false,
+          type: 'text'
         };
         
         $scope.chatMessages.push(message);
@@ -564,6 +613,11 @@ angular.module('webinarApp')
         
         // SIMPLIFIED: Just play without time sync for now
         console.log('Attempting simple video play...');
+        
+        // Ensure video is not muted (unmute the video for audio)
+        video.muted = false;
+        console.log('🔊 Video unmuted for audio playback');
+        
         video.play().then(function() {
           console.log('✅ Video play() succeeded');
           console.log('- paused after play:', video.paused);
@@ -825,11 +879,8 @@ angular.module('webinarApp')
       // Start attendee simulation with time-based behavior
       $scope.startAttendeeSimulation();
       
-      // Add some sample chat messages
-      $scope.chatMessages = [
-        { sender: 'Host', message: 'Welcome to the webinar!', timestamp: new Date(), isSystem: false },
-        { sender: 'Alice', message: 'Looking forward to this session!', timestamp: new Date(), isSystem: false }
-      ];
+      // Ensure no non-system messages before live
+      $scope.chatMessages = $scope.chatMessages.filter(m => m.isSystem);
       
       // Debug video path
       console.log('Webinar video path:', $scope.webinar.videoPath);
@@ -849,6 +900,173 @@ angular.module('webinarApp')
         }, 2000);
       }
     };
+
+    // Scheduled automated messages delivery watcher
+    $scope.startScheduledMessageWatcher = function() {
+      // Clear any previous delivery state if webinar changes
+      let lastCheck = 0;
+      const poll = $interval(function() {
+        try {
+          // Must have webinar and scheduled date/time
+          if (!$scope.webinar || !$scope.webinar.scheduledDate) return;
+          if (!Array.isArray($scope.scheduledMessages) || !$scope.scheduledMessages.length) return;
+
+          const now = Date.now();
+          if (now - lastCheck < 1000) return; // throttle to prevent spam
+          lastCheck = now;
+
+          // Parse the scheduled start time
+          const scheduledStartTime = new Date($scope.webinar.scheduledDate);
+          const startMs = scheduledStartTime.getTime();
+          
+          // CRITICAL: Only deliver messages AFTER the scheduled date and time
+          if (now < startMs) {
+            console.log('Webinar not started yet. Scheduled for:', scheduledStartTime.toLocaleString());
+            return; 
+          }
+
+          // Only push during LIVE window (within duration)
+          const durationMinutes = Number($scope.webinar.duration) || 30;
+          const endMs = startMs + (durationMinutes * 60 * 1000);
+          if (now > endMs) {
+            console.log('Webinar ended. No more automated messages.');
+            return;
+          }
+
+          // Process each scheduled message
+          $scope.scheduledMessages.forEach(function(sm) {
+            if (!sm || !sm.id) return;
+            
+            const atSec = Number(sm.atSeconds || 0);
+            const fireAt = startMs + Math.max(0, atSec) * 1000;
+            
+            // Fire message only if:
+            // 1. Current time >= message fire time
+            // 2. Message hasn't been delivered yet
+            if (now >= fireAt && !hasDelivered(sm.id)) {
+              console.log('Delivering automated message:', sm.text, 'at', new Date(fireAt).toLocaleString());
+              $scope.pushAutomatedChat(sm);
+              markDelivered(sm.id);
+            }
+          });
+        } catch (e) {
+          console.error('Error in scheduled message watcher:', e);
+        }
+      }, 1000);
+
+      $scope.$on('$destroy', function() { if (poll) $interval.cancel(poll); });
+    };
+
+    // Render a scheduled message in chat
+    $scope.pushAutomatedChat = function(sm) {
+      const base = {
+        id: sm.id,
+        sender: sm.sender || 'Host',
+        timestamp: new Date(),
+        isSystem: false,
+        type: sm.kind || sm.type || 'text'
+      };
+      if (base.type === 'cta') {
+        $scope.chatMessages.push({
+          ...base,
+          message: sm.text || 'Check this out',
+          buttons: Array.isArray(sm.buttons) ? sm.buttons : (sm.buttonLabel && sm.buttonUrl ? [{ label: sm.buttonLabel, url: sm.buttonUrl }] : [])
+        });
+      } else if (base.type === 'image') {
+        $scope.chatMessages.push({
+          ...base,
+          message: sm.caption || sm.text || '',
+          imageUrl: sm.imageUrl
+        });
+      } else {
+        $scope.chatMessages.push({ ...base, message: sm.text || '' });
+      }
+
+      // Scroll to bottom
+      $timeout(function() {
+        const chatContainer = document.getElementById('chatContainer');
+        if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+      }, 50);
+    };
+
+    // ---------- Host: Automated message scheduler (simple popup) ----------
+    $scope.scheduler = {
+      open: false,
+      editing: [], // local editable copy
+      saving: false
+    };
+
+    $scope.openScheduler = function() {
+      if (!$scope.isHost) { return; }
+      $scope.scheduler.open = true;
+      // clone existing messages
+      $scope.scheduler.editing = ($scope.scheduledMessages || []).map(m => ({ ...m }));
+    };
+
+    $scope.closeScheduler = function() {
+      $scope.scheduler.open = false;
+    };
+
+    function genId() { return 'sm_' + Math.random().toString(36).slice(2) + Date.now(); }
+
+    $scope.addScheduledTextAtNow = function() {
+      const t = $scope.getCurrentVideoSeconds();
+      $scope.scheduler.editing.push({ id: genId(), kind: 'text', text: 'New message', atSeconds: t });
+    };
+    $scope.addScheduledCTAAtNow = function() {
+      const t = $scope.getCurrentVideoSeconds();
+      $scope.scheduler.editing.push({ id: genId(), kind: 'cta', text: 'Limited offer', buttonLabel: 'Buy now', buttonUrl: 'https://example.com', atSeconds: t, buttons: [] });
+    };
+    $scope.addScheduledImageAtNow = function() {
+      const t = $scope.getCurrentVideoSeconds();
+      $scope.scheduler.editing.push({ id: genId(), kind: 'image', imageUrl: '', caption: '', atSeconds: t });
+    };
+
+    $scope.removeScheduled = function(id) {
+      $scope.scheduler.editing = $scope.scheduler.editing.filter(m => m.id !== id);
+    };
+
+    $scope.getCurrentVideoSeconds = function() {
+      try {
+        const video = document.getElementById('webinarVideo');
+        if (video && !isNaN(video.currentTime)) return Math.floor(video.currentTime);
+      } catch(e) {}
+      // fallback: compute based on clock since start
+      if ($scope.webinar && $scope.webinar.scheduledDate) {
+        const now = Date.now();
+        const start = new Date($scope.webinar.scheduledDate).getTime();
+        return Math.max(0, Math.floor((now - start)/1000));
+      }
+      return 0;
+    };
+
+    $scope.saveScheduledMessages = function() {
+      if (!$scope.isHost) return;
+      $scope.scheduler.saving = true;
+      // Normalize buttons array for cta kind
+      const payload = $scope.scheduler.editing.map(m => ({
+        id: m.id || genId(),
+        kind: m.kind || m.type || 'text',
+        text: m.text || '',
+        atSeconds: Math.max(0, parseInt(m.atSeconds || 0, 10)),
+        imageUrl: m.imageUrl || undefined,
+        caption: m.caption || undefined,
+        buttons: Array.isArray(m.buttons) ? m.buttons.filter(b => b && b.label && b.url) : (m.buttonLabel && m.buttonUrl ? [{ label: m.buttonLabel, url: m.buttonUrl }] : [])
+      }));
+
+      $http.put(`/api/webinars/${$scope.webinarId}/scheduled-messages`, { scheduledMessages: payload })
+        .then(res => {
+          ToastService.success('Automated messages saved');
+          $scope.scheduledMessages = payload;
+          $scope.scheduler.saving = false;
+          $scope.scheduler.open = false;
+        })
+        .catch(err => {
+          console.error('Failed to save scheduled messages', err);
+          ToastService.error('Failed to save messages');
+          $scope.scheduler.saving = false;
+        });
+    };
     
     // Initialize controller
     $scope.loadWebinar();
@@ -856,26 +1074,26 @@ angular.module('webinarApp')
     // Start periodic status checking for waiting webinars
     $scope.startStatusMonitoring = function() {
       if ($scope.roomState.status === 'waiting') {
-        const statusCheckInterval = setInterval(function() {
+        // Use $interval for Angular digest and check every 1s near start time
+        const statusCheckInterval = $interval(function() {
           $scope.checkWebinarStatus();
-          
-          // If webinar has gone live, start video and clear interval
+
           if ($scope.roomState.status === 'live') {
             console.log('Webinar has gone live! Starting video...');
-            setTimeout(function() {
-              if ($scope.webinar.videoPath && !$scope.videoError) {
+            $timeout(function() {
+              if ($scope.webinar && $scope.webinar.videoPath && !$scope.videoError) {
                 $scope.playVideo();
               }
-            }, 1000);
-            clearInterval(statusCheckInterval);
+            }, 300);
+            $interval.cancel(statusCheckInterval);
           }
-          
-          $scope.$apply();
-        }, 5000); // Check every 5 seconds
-        
-        // Clear interval when leaving the page
-        window.addEventListener('beforeunload', function() {
-          clearInterval(statusCheckInterval);
+        }, 1000);
+
+        // Clear interval when leaving/destroying scope
+        $scope.$on('$destroy', function() {
+          if (statusCheckInterval) {
+            $interval.cancel(statusCheckInterval);
+          }
         });
       }
     };

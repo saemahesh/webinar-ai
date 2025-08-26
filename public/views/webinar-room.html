@@ -26,7 +26,7 @@
               <p class="text-slate-300 mb-4">{{webinar.title}}</p>
             </div>
             
-            <div class="bg-slate-800 rounded-lg p-6 max-w-md mx-auto">
+            <div class="bg-slate-800 rounded-lg p-3 max-w-md mx-auto">
               <div class="text-3xl font-mono mb-2">{{formatTimeToStart()}}</div>
               <p class="text-slate-400 text-sm">Time remaining</p>
             </div>
@@ -45,7 +45,6 @@
           <div style="width: 100%; height: 100%; background: #000; position: relative;">
             <video 
               id="webinarVideo" 
-              muted
               preload="metadata"
               playsinline
               disablepictureinpicture
@@ -126,7 +125,7 @@
           <i class="fas fa-phone-slash"></i>
         </button>
         
-        <span class="participant-count">
+        <span class="participant-count" ng-hide="roomState.status === 'waiting'">
           <i class="fa fa-users"></i> {{attendeeCount || 1}}
         </span>
       </div>
@@ -140,8 +139,8 @@
           <p class="text-sm text-slate-400">{{chatMessages.length}} messages</p>
         </div>
         
-        <!-- Chat Messages -->
-        <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-3 chat-messages">
+  <!-- Chat Messages -->
+  <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-3 chat-messages">
           <div ng-repeat="message in chatMessages" class="animate-fade-in">
             
             <!-- System Message -->
@@ -162,7 +161,25 @@
                     <span class="font-medium text-white text-sm">{{message.sender}}</span>
                     <span class="text-slate-400 text-xs">{{message.timestamp | date:'HH:mm'}}</span>
                   </div>
-                  <p class="text-slate-300 text-sm break-words">{{message.message}}</p>
+                  <!-- Text message -->
+                  <p ng-if="!message.type || message.type === 'text'" class="text-slate-300 text-sm break-words">{{message.message}}</p>
+                  
+                  <!-- CTA message with buttons -->
+                  <div ng-if="message.type === 'cta'" class="space-y-2">
+                    <p class="text-slate-300 text-sm break-words">{{message.message}}</p>
+                    <div class="flex flex-wrap gap-2">
+                      <a ng-repeat="btn in message.buttons" ng-href="{{btn.url}}" target="_blank" rel="noopener"
+                         class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-md text-xs font-semibold">
+                        {{btn.label}}
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <!-- Image message -->
+                  <div ng-if="message.type === 'image'" class="space-y-2">
+                    <img ng-src="{{message.imageUrl}}" alt="scheduled image" class="rounded-md max-h-48 object-contain" />
+                    <p ng-if="message.message" class="text-slate-300 text-sm break-words">{{message.message}}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -171,7 +188,7 @@
         </div>
         
         <!-- Chat Input -->
-        <div ng-if="isWebinarLive" class="p-4 border-t border-slate-700 chat-input">
+  <div ng-if="isWebinarLive" class="p-4 border-t border-slate-700 chat-input">
           <!-- To Host Indicator -->
           <div class="mb-2 text-xs text-orange-400 flex items-center bg-slate-800 p-2 rounded-lg border border-orange-500/30">
             <i class="fas fa-user-crown mr-2 text-orange-500"></i>
@@ -210,6 +227,75 @@
 
 <!-- Host Control Panel (only for hosts) -->
 <div ng-if="isHost" ng-include="'/views/components/host-control-panel.html'"></div>
+
+<!-- Lightweight Scheduler Modal for Hosts -->
+<div ng-if="isHost && scheduler.open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+  <div class="bg-slate-900 border border-slate-700 rounded-lg w-full max-w-2xl shadow-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-white font-semibold">Automated Messages Scheduler</h3>
+      <button class="text-slate-300 hover:text-white" ng-click="closeScheduler()">✕</button>
+    </div>
+    <div class="mb-3 text-slate-300 text-sm">Pause video at the desired time and add a message. Messages will appear to attendees only after the scheduled date/time has started.</div>
+    <div class="flex gap-2 mb-4">
+      <button class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded" ng-click="addScheduledTextAtNow()">+ Text at current time</button>
+      <button class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded" ng-click="addScheduledCTAAtNow()">+ CTA at current time</button>
+      <button class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded" ng-click="addScheduledImageAtNow()">+ Image at current time</button>
+    </div>
+    <div class="max-h-64 overflow-y-auto divide-y divide-slate-800">
+      <div class="py-3" ng-repeat="m in scheduler.editing track by m.id">
+        <div class="grid grid-cols-12 gap-2 items-start">
+          <div class="col-span-2">
+            <label class="block text-xs text-slate-400">Type</label>
+            <select class="w-full bg-slate-800 text-white text-xs p-2 rounded border border-slate-700" ng-model="m.kind">
+              <option value="text">Text</option>
+              <option value="cta">CTA</option>
+              <option value="image">Image</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs text-slate-400">At (sec)</label>
+            <input type="number" min="0" class="w-full bg-slate-800 text-white text-xs p-2 rounded border border-slate-700" ng-model="m.atSeconds" />
+          </div>
+          <div class="col-span-7" ng-switch="m.kind">
+            <div ng-switch-when="text">
+              <label class="block text-xs text-slate-400">Message</label>
+              <input class="w-full bg-slate-800 text-white text-xs p-2 rounded border border-slate-700" ng-model="m.text" placeholder="Type message..." />
+            </div>
+            <div ng-switch-when="cta">
+              <label class="block text-xs text-slate-400">Text</label>
+              <input class="w-full bg-slate-800 text-white text-xs p-2 rounded border border-slate-700 mb-2" ng-model="m.text" placeholder="CTA text..." />
+              <div class="grid grid-cols-2 gap-2" ng-repeat="b in m.buttons">
+                <input class="bg-slate-800 text-white text-xs p-2 rounded border border-slate-700" ng-model="b.label" placeholder="Button label" />
+                <input class="bg-slate-800 text-white text-xs p-2 rounded border border-slate-700" ng-model="b.url" placeholder="Button URL" />
+              </div>
+              <button class="mt-2 px-2 py-1 bg-slate-700 text-white rounded text-xs" ng-click="m.buttons = (m.buttons||[]); m.buttons.push({label:'Buy now', url:'https://example.com'})">+ Add Button</button>
+            </div>
+            <div ng-switch-when="image">
+              <label class="block text-xs text-slate-400">Image URL</label>
+              <input class="w-full bg-slate-800 text-white text-xs p-2 rounded border border-slate-700 mb-2" ng-model="m.imageUrl" placeholder="https://..." />
+              <label class="block text-xs text-slate-400">Caption</label>
+              <input class="w-full bg-slate-800 text-white text-xs p-2 rounded border border-slate-700" ng-model="m.caption" placeholder="Optional caption..." />
+            </div>
+          </div>
+          <div class="col-span-1 flex justify-end">
+            <button class="text-red-400 hover:text-red-300" title="Remove" ng-click="removeScheduled(m.id)">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 flex justify-end gap-2">
+      <button class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded" ng-click="closeScheduler()">Cancel</button>
+      <button class="px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded disabled:opacity-60" ng-disabled="scheduler.saving" ng-click="saveScheduledMessages()">Save</button>
+    </div>
+  </div>
+  
+</div>
+
+<!-- Scheduler open button for hosts -->
+<div ng-if="isHost && !scheduler.open" class="fixed bottom-24 right-4 z-40">
+  <button class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg shadow" ng-click="openScheduler()">🕒 Schedule Messages</button>
+  <div class="mt-2 text-xs text-slate-300">Pause video to pick a time, then add.</div>
+</div>
 
 <!-- Hide main navigation for webinar room -->
 <style>

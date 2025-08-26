@@ -74,6 +74,12 @@ angular.module('webinarApp')
         .then((response) => {
           return response.data;
         });
+    },
+
+    // Save scheduled automated messages (host)
+    saveScheduledMessages: function(webinarId, scheduledMessages) {
+      return $http.put('/api/webinars/' + webinarId + '/scheduled-messages', { scheduledMessages })
+        .then((response) => response.data);
     }
   };
   

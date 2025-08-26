@@ -3,8 +3,14 @@ angular.module('webinarApp')
 .controller('WebinarDetailsController', ['$scope', '$http', '$stateParams', 'AuthService', 'ToastService', '$state', '$window', '$timeout',
   function($scope, $http, $stateParams, AuthService, ToastService, $state, $window, $timeout) {
     
+    console.log('🚀🚀🚀 WEBINAR DETAILS CONTROLLER STARTING 🚀🚀🚀');
+    console.log('📅 Current timestamp:', new Date().toLocaleTimeString());
+    console.log('🔐 localStorage available:', typeof(Storage) !== "undefined");
+    console.log('💾 Current webinar-details-active-tab value:', localStorage.getItem('webinar-details-active-tab'));
+    
     // Get webinar ID from URL
     const webinarId = $stateParams.webinarId;
+    console.log('🆔 Webinar ID from URL:', webinarId);
     
     // Get current user
     $scope.currentUser = AuthService.getCurrentUser();
@@ -22,8 +28,96 @@ angular.module('webinarApp')
     $scope.customFieldColumns = [];
     $scope.error = null;
     
-    // UI state
-    $scope.activeTab = 'overview';
+    // Automated Messages Scheduler
+    $scope.scheduledMessages = [];
+    $scope.messageScheduler = {
+      open: false,
+      videoUrl: null,
+      currentTime: 0,
+      editing: [],
+      saving: false
+    };
+    
+    // Delete confirmation dialog
+    $scope.deleteConfirmation = {
+      open: false,
+      messageId: null,
+      title: '',
+      message: ''
+    };
+    
+    // UI state - Initialize immediately with saved tab to avoid flash
+    const savedTab = localStorage.getItem('webinar-details-active-tab');
+    const validTabs = ['overview', 'video', 'forms', 'attendees', 'messages', 'analytics', 'settings'];
+    
+    // Set initial tab immediately to avoid flash
+    if (savedTab && validTabs.includes(savedTab)) {
+      console.log('🚀 Setting initial tab immediately to saved value:', savedTab);
+      $scope.activeTab = savedTab;
+    } else {
+      console.log('🚀 Setting initial tab to default: overview');
+      $scope.activeTab = 'overview';
+    }
+    
+    // Add debug functions for tab clicks
+    $scope.debugTabClick = function(tabName) {
+      console.log('🖱️🖱️🖱️ USER CLICKED TAB:', tabName, 'at', new Date().toLocaleTimeString());
+      console.log('🔄 Setting activeTab from', $scope.activeTab, 'to', tabName);
+      $scope.activeTab = tabName;
+    };
+    
+    $scope.debugMobileSelect = function() {
+      console.log('📱📱📱 MOBILE SELECT CHANGED TO:', $scope.activeTab, 'at', new Date().toLocaleTimeString());
+    };
+    $scope.testTabPersistence = function() {
+      console.log('=== MANUAL TAB PERSISTENCE TEST ===');
+      console.log('Current activeTab:', $scope.activeTab);
+      console.log('localStorage value:', localStorage.getItem('webinar-details-active-tab'));
+      
+      // Test setting and getting
+      localStorage.setItem('webinar-details-active-tab', 'messages');
+      console.log('Set to messages, now getting:', localStorage.getItem('webinar-details-active-tab'));
+      
+      // Restore
+      $scope.restoreTabFromStorage();
+    };
+    
+    // Make test function available globally for browser console testing
+    window.testTabPersistence = $scope.testTabPersistence;
+    
+    // Tab persistence function (mainly for manual testing now)
+    $scope.restoreTabFromStorage = function() {
+      const urlParams = new URLSearchParams($window.location.search);
+      const tabFromUrl = urlParams.get('tab');
+      const savedTab = localStorage.getItem('webinar-details-active-tab');
+      
+      console.log('=== MANUAL TAB RESTORATION ===');
+      console.log('Current activeTab:', $scope.activeTab);
+      console.log('URL tab parameter:', tabFromUrl);
+      console.log('Saved tab from localStorage:', savedTab);
+      
+      const validTabs = ['overview', 'video', 'forms', 'attendees', 'messages', 'analytics', 'settings'];
+      
+      // Priority: URL parameter > saved tab > current tab
+      let targetTab = $scope.activeTab;
+      if (tabFromUrl && validTabs.includes(tabFromUrl)) {
+        targetTab = tabFromUrl;
+        console.log('✓ Would use tab from URL:', targetTab);
+      } else if (savedTab && validTabs.includes(savedTab)) {
+        targetTab = savedTab;
+        console.log('✓ Would use saved tab from localStorage:', targetTab);
+      }
+      
+      if (targetTab !== $scope.activeTab) {
+        console.log('📝 Changing activeTab to:', targetTab);
+        $scope.activeTab = targetTab;
+        if (!$scope.$$phase) {
+          $scope.$apply();
+        }
+      }
+      
+      console.log('=== END MANUAL TAB RESTORATION ===');
+    };
     // Group attendee filters to avoid child-scope shadowing from ng-if
     $scope.attendeeFilters = {
       search: '',
@@ -86,12 +180,31 @@ angular.module('webinarApp')
       $scope.isLoading = true;
       $scope.error = null;
       
+      // Test localStorage functionality first
+      try {
+        const testKey = 'webinar-test-' + Date.now();
+        const testValue = 'test-value';
+        localStorage.setItem(testKey, testValue);
+        const retrieved = localStorage.getItem(testKey);
+        localStorage.removeItem(testKey);
+        console.log('✓ localStorage test passed - wrote:', testValue, 'retrieved:', retrieved);
+        
+        // Show current saved tab for debugging
+        const currentSavedTab = localStorage.getItem('webinar-details-active-tab');
+        console.log('🔍 Current saved tab in localStorage:', currentSavedTab);
+      } catch (e) {
+        console.error('❌ localStorage test failed:', e);
+      }
+      
       $http.get('/api/webinars/' + webinarId)
         .then((response) => {
           $scope.webinar = response.data;
           $scope.isLoading = false;
           
           console.log('Webinar loaded, initializing forms...');
+          
+          // Load scheduled messages properly
+          $scope.loadScheduledMessages();
           
           // Initialize edit form
           $scope.initializeEditForm();
@@ -107,11 +220,14 @@ angular.module('webinarApp')
           // Update analytics
           $scope.updateAnalytics();
           
-          // Force another initialization with timeout
+          // Re-initialize edit form after delay
           $timeout(function() {
             console.log('Re-initializing edit form after delay...');
             $scope.initializeEditForm();
           }, 500);
+          
+          // Log completion - tab was already restored immediately on init
+          console.log('✅ Webinar data loading complete. ActiveTab:', $scope.activeTab);
         })
         .catch((error) => {
           console.error('Error loading webinar:', error);
@@ -368,20 +484,16 @@ angular.module('webinarApp')
       document.body.removeChild(textArea);
     };
     
-    // Edit webinar (switch to settings tab)
+    // Edit webinar (switch to settings tab) - ensure Date object for datetime-local
     $scope.editWebinar = function() {
+      console.log('editWebinar called - switching to settings tab');
       $scope.activeTab = 'settings';
-      // Initialize edit form with current webinar data
-      if ($scope.webinar) {
-        $scope.editForm = {
-          title: $scope.webinar.title,
-          description: $scope.webinar.description,
-          scheduledDateTime: new Date($scope.webinar.scheduledDate).toISOString().slice(0, 16),
-          duration: $scope.webinar.duration,
-          maxAttendees: $scope.webinar.maxAttendees,
-          requireRegistration: $scope.webinar.requireRegistration || true
-        };
-      }
+      // Save this tab change to localStorage too
+      localStorage.setItem('webinar-details-active-tab', 'settings');
+      // Defer to allow tab content to render, then initialize form using Date object
+      $timeout(function() {
+        $scope.initializeEditForm();
+      }, 0);
     };
     
     // Update webinar
@@ -849,14 +961,538 @@ angular.module('webinarApp')
     
     // Watch for tab changes to reinitialize forms
     $scope.$watch('activeTab', function(newTab, oldTab) {
+      console.log('🔍🔍🔍 TAB WATCHER TRIGGERED 🔍🔍🔍');
+      console.log('oldTab:', oldTab, 'newTab:', newTab);
+      console.log('Type of oldTab:', typeof oldTab, 'Type of newTab:', typeof newTab);
+      console.log('oldTab === undefined:', oldTab === undefined);
+      console.log('newTab !== oldTab:', newTab !== oldTab);
+      console.log('Current timestamp:', new Date().toLocaleTimeString());
+      
+      if (newTab && newTab !== oldTab && oldTab !== undefined) {
+        console.log('🏆 SAVING TAB TO localStorage');
+        console.log('📝 Tab changed from', oldTab, 'to', newTab, '- saving to localStorage');
+        
+        // Save current tab to localStorage for persistence
+        // Only save if this is a user-initiated change (not initialization)
+        try {
+          console.log('📦 Attempting to save to localStorage...');
+          localStorage.setItem('webinar-details-active-tab', newTab);
+          const verifyRead = localStorage.getItem('webinar-details-active-tab');
+          console.log('✅ Successfully saved tab to localStorage:', newTab);
+          console.log('✅ Verification read from localStorage:', verifyRead);
+          console.log('✅ Save successful:', verifyRead === newTab);
+        } catch (e) {
+          console.error('❌ Failed to save tab to localStorage:', e);
+        }
+      } else {
+        console.log('❌ NOT saving to localStorage because:');
+        if (!newTab) console.log('  - newTab is falsy:', newTab);
+        if (newTab === oldTab) console.log('  - newTab === oldTab');
+        if (oldTab === undefined) console.log('  - oldTab is undefined (initialization)');
+      }
+      
       if (newTab === 'settings' && $scope.webinar && newTab !== oldTab) {
-        console.log('Switching to settings tab, reinitializing edit form');
+        console.log('🔧 Switching to settings tab, reinitializing edit form');
         $timeout(function() {
           $scope.initializeEditForm();
         }, 100);
       }
+      if (newTab === 'messages' && $scope.webinar && newTab !== oldTab) {
+        console.log('💬 Switching to messages tab, loading scheduled messages');
+        $scope.loadScheduledMessages();
+      }
+      
+      console.log('🔍🔍🔍 TAB WATCHER END 🔍🔍🔍');
     });
     
+    // =============== AUTOMATED MESSAGES SCHEDULER ===============
+    
+    // Load scheduled messages for this webinar
+    $scope.loadScheduledMessages = function() {
+      console.log('=== LOADING SCHEDULED MESSAGES ===');
+      console.log('Raw webinar.scheduledMessages:', $scope.webinar.scheduledMessages);
+      
+      $scope.scheduledMessages = ($scope.webinar.scheduledMessages || [])
+        .sort((a, b) => (a.atSeconds || 0) - (b.atSeconds || 0)); // Sort by time ascending
+      
+      // Debug: Log all messages and their types BEFORE processing
+      console.log('Messages before processing:', $scope.scheduledMessages.map(m => ({ 
+        id: m.id, 
+        type: m.type,
+        kind: m.kind,
+        text: m.text ? m.text.substring(0, 50) + '...' : 'no text',
+        imageUrl: m.imageUrl,
+        buttons: m.buttons
+      })));
+      
+      // Ensure message types are preserved and properly set
+      $scope.scheduledMessages.forEach(function(message, index) {
+        console.log(`Processing message ${index}:`, {
+          id: message.id,
+          originalType: message.type,
+          originalKind: message.kind,
+          hasType: !!message.type,
+          hasKind: !!message.kind
+        });
+        
+        // Map 'kind' field from server to 'type' field for frontend
+        if (message.kind && !message.type) {
+          console.log(`Mapping kind '${message.kind}' to type for message ${message.id}`);
+          message.type = message.kind;
+        }
+        
+        // Ensure type is set, default to 'text' if not specified
+        if (!message.type) {
+          console.warn(`Message ${message.id} has no type, defaulting to 'text'`);
+          message.type = 'text';
+        }
+        
+        // Convert atSeconds to hours/minutes/seconds for editing
+        if (typeof message.atSeconds === 'number') {
+          message.hours = Math.floor(message.atSeconds / 3600);
+          message.minutes = Math.floor((message.atSeconds % 3600) / 60);
+          message.seconds = message.atSeconds % 60;
+        } else {
+          message.hours = 0;
+          message.minutes = 0;
+          message.seconds = 0;
+          message.atSeconds = 0;
+        }
+        
+        console.log(`Message ${index} after processing:`, {
+          id: message.id,
+          type: message.type,
+          kind: message.kind,
+          hours: message.hours,
+          minutes: message.minutes,
+          seconds: message.seconds
+        });
+      });
+      
+      // Debug: Log all messages and their types AFTER processing
+      console.log('Messages after processing:', $scope.scheduledMessages.map(m => ({ 
+        id: m.id, 
+        type: m.type, 
+        kind: m.kind,
+        text: m.text ? m.text.substring(0, 30) + '...' : 'no text'
+      })));
+      
+      // Force scope update to refresh UI
+      console.log('Forcing scope update...');
+      if (!$scope.$$phase) {
+        $scope.$apply();
+      }
+      console.log('=== FINISHED LOADING SCHEDULED MESSAGES ===');
+    };
+    
+    // Update atSeconds when time components change
+    $scope.updateMessageTime = function(message) {
+      const hours = parseInt(message.hours) || 0;
+      const minutes = parseInt(message.minutes) || 0;
+      const seconds = parseInt(message.seconds) || 0;
+      message.atSeconds = hours * 3600 + minutes * 60 + seconds;
+    };
+    
+    // Open message scheduler popup with video preview
+    $scope.openMessageScheduler = function() {
+      $scope.messageScheduler.open = true;
+      
+      // Ensure scheduled messages have time components and proper structure
+      const messagesWithTimeComponents = ($scope.scheduledMessages || []).map(m => {
+        const message = { ...m };
+        
+        // Debug: Log original message
+        console.log('Original message:', JSON.stringify(m, null, 2));
+        
+        // Convert atSeconds to hours/minutes/seconds if not already present
+        if (typeof message.atSeconds === 'number' && (message.hours === undefined || message.minutes === undefined || message.seconds === undefined)) {
+          message.hours = Math.floor(message.atSeconds / 3600);
+          message.minutes = Math.floor((message.atSeconds % 3600) / 60);
+          message.seconds = message.atSeconds % 60;
+        } else if (message.hours === undefined || message.minutes === undefined || message.seconds === undefined) {
+          message.hours = 0;
+          message.minutes = 0;
+          message.seconds = 0;
+          message.atSeconds = 0;
+        }
+        
+        // Ensure buttons array exists for CTA messages
+        if (message.type === 'cta' && !Array.isArray(message.buttons)) {
+          message.buttons = message.buttons ? [message.buttons] : [];
+        }
+        
+        // Ensure required fields exist with defaults
+        message.text = message.text || '';
+        message.type = message.type || 'text';
+        message.id = message.id || $scope.generateMessageId();
+        
+        // Debug: Log processed message
+        console.log('Processed message:', JSON.stringify(message, null, 2));
+        
+        return message;
+      });
+      
+      $scope.messageScheduler.editing = messagesWithTimeComponents;
+      
+      // Debug: Log final editing array
+      console.log('Final editing array:', JSON.stringify($scope.messageScheduler.editing, null, 2));
+      
+      // Set video URL if available
+      if ($scope.webinar && $scope.webinar.videoPath) {
+        const videoPath = $scope.webinar.videoPath;
+        if (videoPath.startsWith('http')) {
+          $scope.messageScheduler.videoUrl = videoPath;
+        } else {
+          $scope.messageScheduler.videoUrl = window.location.origin + videoPath;
+        }
+      }
+      
+      // Initialize video when modal opens
+      $timeout(function() {
+        const video = document.getElementById('schedulerVideo');
+        if (video) {
+          video.load();
+        }
+      }, 100);
+    };
+    
+    // Close message scheduler
+    $scope.closeMessageScheduler = function() {
+      $scope.messageScheduler.open = false;
+    };
+    
+    // Edit single message - opens scheduler with only that message
+    $scope.editSingleMessage = function(message) {
+      if (!message) return;
+      
+      console.log('Editing single message:', JSON.stringify(message, null, 2));
+      
+      // Create a deep copy of the message with time components
+      const messageToEdit = JSON.parse(JSON.stringify(message));
+      
+      // Convert atSeconds to hours/minutes/seconds for editing
+      if (typeof messageToEdit.atSeconds === 'number') {
+        messageToEdit.hours = Math.floor(messageToEdit.atSeconds / 3600);
+        messageToEdit.minutes = Math.floor((messageToEdit.atSeconds % 3600) / 60);
+        messageToEdit.seconds = messageToEdit.atSeconds % 60;
+      } else {
+        messageToEdit.hours = 0;
+        messageToEdit.minutes = 0;
+        messageToEdit.seconds = 0;
+        messageToEdit.atSeconds = 0;
+      }
+      
+      // Ensure proper structure for different message types
+      messageToEdit.type = messageToEdit.type || 'text';
+      messageToEdit.text = messageToEdit.text || '';
+      messageToEdit.id = messageToEdit.id || $scope.generateMessageId();
+      
+      // Ensure proper structure for CTA buttons
+      if (messageToEdit.type === 'cta') {
+        messageToEdit.buttons = Array.isArray(messageToEdit.buttons) ? messageToEdit.buttons : [];
+        if (messageToEdit.buttons.length === 0) {
+          messageToEdit.buttons.push({ label: 'Button', url: 'https://example.com' });
+        }
+      }
+      
+      // Ensure proper structure for image messages
+      if (messageToEdit.type === 'image') {
+        messageToEdit.imageUrl = messageToEdit.imageUrl || '';
+        messageToEdit.caption = messageToEdit.caption || '';
+      }
+      
+      console.log('Message prepared for editing:', JSON.stringify(messageToEdit, null, 2));
+      
+      // Open scheduler with this single message
+      $scope.messageScheduler.open = true;
+      $scope.messageScheduler.editing = [messageToEdit];
+      
+      // Force angular to update the view
+      $timeout(function() {
+        $scope.$apply();
+      }, 50);
+      
+      // Set video URL if available
+      if ($scope.webinar && $scope.webinar.videoPath) {
+        const videoPath = $scope.webinar.videoPath;
+        if (videoPath.startsWith('http')) {
+          $scope.messageScheduler.videoUrl = videoPath;
+        } else {
+          $scope.messageScheduler.videoUrl = window.location.origin + videoPath;
+        }
+      }
+      
+      // Initialize video when modal opens
+      $timeout(function() {
+        const video = document.getElementById('schedulerVideo');
+        if (video) {
+          video.load();
+        }
+      }, 100);
+    };
+    
+    // Delete single message
+    $scope.deleteSingleMessage = function(messageId) {
+      if (!messageId) return;
+      
+      // Set up delete confirmation
+      $scope.deleteConfirmation = {
+        open: true,
+        messageId: messageId,
+        title: 'Delete Automated Message',
+        message: 'Are you sure you want to delete this automated message? This action cannot be undone.'
+      };
+    };
+    
+    // Confirm delete message
+    $scope.confirmDeleteMessage = function() {
+      const messageId = $scope.deleteConfirmation.messageId;
+      
+      // Remove from local array
+      $scope.scheduledMessages = $scope.scheduledMessages.filter(m => m.id !== messageId);
+      $scope.webinar.scheduledMessages = $scope.scheduledMessages;
+      
+      // Save to server
+      $http.put('/api/webinars/' + webinarId + '/scheduled-messages', { 
+        scheduledMessages: $scope.scheduledMessages 
+      })
+      .then(function(response) {
+        ToastService.success('Message deleted successfully!');
+      })
+      .catch(function(error) {
+        console.error('Error deleting message:', error);
+        ToastService.error('Failed to delete message');
+        // Reload messages on error
+        $scope.loadScheduledMessages();
+      });
+      
+      // Close confirmation dialog
+      $scope.deleteConfirmation.open = false;
+    };
+    
+    // Cancel delete message
+    $scope.cancelDeleteMessage = function() {
+      $scope.deleteConfirmation.open = false;
+    };
+    
+    // Get current video time for scheduling
+    $scope.getCurrentVideoTime = function() {
+      try {
+        const video = document.getElementById('schedulerVideo');
+        if (video && !isNaN(video.currentTime)) {
+          return Math.floor(video.currentTime);
+        }
+      } catch (e) {}
+      return 0;
+    };
+    
+    // Generate unique ID for scheduled messages
+    $scope.generateMessageId = function() {
+      return 'msg_' + Math.random().toString(36).slice(2) + Date.now();
+    };
+    
+    // Add text message at current time
+    $scope.addTextMessage = function() {
+      const currentTime = $scope.getCurrentVideoTime();
+      const hours = Math.floor(currentTime / 3600);
+      const minutes = Math.floor((currentTime % 3600) / 60);
+      const seconds = currentTime % 60;
+      
+      $scope.messageScheduler.editing.push({
+        id: $scope.generateMessageId(),
+        type: 'text',
+        text: 'New message',
+        atSeconds: currentTime,
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds
+      });
+    };
+    
+    // Add CTA message at current time
+    $scope.addCTAMessage = function() {
+      const currentTime = $scope.getCurrentVideoTime();
+      const hours = Math.floor(currentTime / 3600);
+      const minutes = Math.floor((currentTime % 3600) / 60);
+      const seconds = currentTime % 60;
+      
+      $scope.messageScheduler.editing.push({
+        id: $scope.generateMessageId(),
+        type: 'cta',
+        text: 'Limited time offer!',
+        buttons: [{ label: 'Buy Now', url: 'https://example.com' }],
+        atSeconds: currentTime,
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds
+      });
+    };
+    
+    // Add image message at current time
+    $scope.addImageMessage = function() {
+      const currentTime = $scope.getCurrentVideoTime();
+      const hours = Math.floor(currentTime / 3600);
+      const minutes = Math.floor((currentTime % 3600) / 60);
+      const seconds = currentTime % 60;
+      
+      $scope.messageScheduler.editing.push({
+        id: $scope.generateMessageId(),
+        type: 'image',
+        imageUrl: '',
+        caption: 'Check this out!',
+        atSeconds: currentTime,
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds
+      });
+    };
+    
+    // Remove scheduled message
+    $scope.removeScheduledMessage = function(id) {
+      $scope.messageScheduler.editing = $scope.messageScheduler.editing.filter(m => m.id !== id);
+    };
+    
+    // Add button to CTA message
+    $scope.addCTAButton = function(message) {
+      if (!message.buttons) {
+        message.buttons = [];
+      }
+      message.buttons.push({ label: 'New Button', url: 'https://example.com' });
+    };
+    
+    // Remove button from CTA message
+    $scope.removeCTAButton = function(message, index) {
+      if (message.buttons && index >= 0 && index < message.buttons.length) {
+        message.buttons.splice(index, 1);
+      }
+    };
+    
+    // Save scheduled messages
+    $scope.saveScheduledMessages = function() {
+      if (!$scope.webinar) return;
+      
+      $scope.messageScheduler.saving = true;
+      
+      // Normalize and validate messages
+      const validMessages = $scope.messageScheduler.editing
+        .filter(m => {
+          if (!m || !m.type) return false;
+          // For image messages, require either text/caption or imageUrl
+          if (m.type === 'image') {
+            return (m.text && m.text.trim()) || (m.caption && m.caption.trim()) || (m.imageUrl && m.imageUrl.trim());
+          }
+          // For text and CTA messages, require text
+          return m.text && m.text.trim();
+        })
+        .map(m => {
+          // Debug: log the original message
+          console.log('Processing message for save:', JSON.stringify(m, null, 2));
+          
+          // Calculate atSeconds from hours/minutes/seconds if they exist
+          const hours = parseInt(m.hours) || 0;
+          const minutes = parseInt(m.minutes) || 0;
+          const seconds = parseInt(m.seconds) || 0;
+          const calculatedSeconds = hours * 3600 + minutes * 60 + seconds;
+          
+          const message = {
+            id: m.id || $scope.generateMessageId(),
+            type: m.type || 'text', // Ensure type is preserved
+            atSeconds: Math.max(0, calculatedSeconds || parseInt(m.atSeconds || 0, 10))
+          };
+          
+          // Debug: log message type
+          console.log('Message type being saved:', message.type, 'for message ID:', message.id);
+          
+          // Add type-specific properties
+          if (m.type === 'image') {
+            message.imageUrl = m.imageUrl ? m.imageUrl.trim() : undefined;
+            message.caption = m.caption ? m.caption.trim() : undefined;
+            message.text = m.text ? m.text.trim() : (message.caption || '');
+          } else if (m.type === 'cta') {
+            message.text = m.text.trim();
+            message.buttons = Array.isArray(m.buttons) ? 
+              m.buttons.filter(b => b && b.label && b.label.trim() && b.url && b.url.trim()) : [];
+          } else {
+            message.text = m.text.trim();
+          }
+          
+          // Debug: log final message
+          console.log('Final processed message:', JSON.stringify(message, null, 2));
+          
+          return message;
+        })
+        .sort((a, b) => a.atSeconds - b.atSeconds); // Auto-sort by time ascending
+      
+      $http.put('/api/webinars/' + webinarId + '/scheduled-messages', { 
+        scheduledMessages: validMessages 
+      })
+      .then(function(response) {
+        ToastService.success('Automated messages saved successfully!');
+        $scope.scheduledMessages = validMessages;
+        $scope.webinar.scheduledMessages = validMessages;
+        $scope.messageScheduler.saving = false;
+        $scope.messageScheduler.open = false;
+      })
+      .catch(function(error) {
+        console.error('Error saving scheduled messages:', error);
+        ToastService.error('Failed to save automated messages');
+        $scope.messageScheduler.saving = false;
+      });
+    };
+    
+    // Format time display
+    $scope.formatTimeDisplay = function(seconds) {
+      const totalSecs = parseInt(seconds) || 0;
+      const hours = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
+      
+      if (hours > 0) {
+        return hours + 'h ' + mins + 'm ' + secs + 's';
+      } else if (mins > 0) {
+        return mins + 'm ' + secs + 's';
+      } else {
+        return secs + 's';
+      }
+    };
+    
+    // Parse time input (supports hours, minutes, seconds format)
+    $scope.parseTimeInput = function(timeStr) {
+      if (!timeStr) return 0;
+      
+      // Convert "1h 30m 45s" or "30m 45s" or "45s" format to seconds
+      const str = String(timeStr).toLowerCase().trim();
+      let totalSeconds = 0;
+      
+      // Extract hours
+      const hoursMatch = str.match(/(\d+)h/);
+      if (hoursMatch) {
+        totalSeconds += parseInt(hoursMatch[1]) * 3600;
+      }
+      
+      // Extract minutes
+      const minutesMatch = str.match(/(\d+)m/);
+      if (minutesMatch) {
+        totalSeconds += parseInt(minutesMatch[1]) * 60;
+      }
+      
+      // Extract seconds
+      const secondsMatch = str.match(/(\d+)s/);
+      if (secondsMatch) {
+        totalSeconds += parseInt(secondsMatch[1]);
+      }
+      
+      // If no time format found, treat as raw seconds
+      if (!hoursMatch && !minutesMatch && !secondsMatch) {
+        const numValue = parseInt(str);
+        if (!isNaN(numValue)) {
+          totalSeconds = numValue;
+        }
+      }
+      
+      return Math.max(0, totalSeconds);
+    };
+
     // Initialize
     $scope.loadWebinar();
   }

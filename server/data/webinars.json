@@ -3,21 +3,58 @@
     "id": "5ab341c5-883f-4a20-ba5d-bfe884742d31",
     "title": "webinarr",
     "description": "webinarr deskpsdsd",
-    "scheduledDate": "2025-08-27T10:24:00.000Z",
+    "scheduledDate": "2025-08-26T16:39:00.000Z",
     "duration": 60,
     "maxAttendees": 100,
     "requireRegistration": true,
-    "status": "upcoming",
+    "status": "live",
     "hostId": "8a0d9d75-f0d8-4b8f-b3e0-1d32d9de9223",
     "hostEmail": "mahesh@gmail.com",
-    "registrations": 21,
+    "registrations": 26,
     "attendees": [],
     "createdAt": "2025-08-24T11:13:32.675Z",
-    "updatedAt": "2025-08-26T10:13:47.196Z",
-    "videoFile": null,
-    "hasVideo": false,
+    "updatedAt": "2025-08-26T16:40:20.680Z",
+    "videoFile": {
+      "originalName": "mcp.mp4",
+      "filename": "5ab341c5-883f-4a20-ba5d-bfe884742d31_1756225069882_mcp.mp4",
+      "path": "uploads/videos/5ab341c5-883f-4a20-ba5d-bfe884742d31_1756225069882_mcp.mp4",
+      "size": 27165461,
+      "mimetype": "video/mp4",
+      "uploadedAt": "2025-08-26T16:17:49.979Z"
+    },
+    "hasVideo": true,
     "customFields": [],
     "confirmationMessage": "",
-    "registrationDeadline": null
+    "registrationDeadline": null,
+    "scheduledMessages": [
+      {
+        "id": "msg_f0yeyjrxqv61756220424070",
+        "kind": "text",
+        "text": "text",
+        "atSeconds": 7,
+        "buttons": []
+      },
+      {
+        "id": "msg_osdow4esi6p1756220431337",
+        "kind": "cta",
+        "text": "Limited time offer!",
+        "atSeconds": 26,
+        "buttons": [
+          {
+            "label": "Buy Now",
+            "url": "https://example.com"
+          }
+        ]
+      },
+      {
+        "id": "msg_hi3tplx4i11756221234567",
+        "kind": "image",
+        "text": "Check this out!",
+        "atSeconds": 79,
+        "imageUrl": "https://www.researchgate.net/profile/Vinod-Shukla/publication/340398294/figure/fig3/AS:876175308103681@1585907880294/Sample-Figure-of-QR-Code-QR-code-works-in-a-simple-way-It-all-starts-of-by-feeding-in_Q320.jpg",
+        "caption": "Check this out!",
+        "buttons": []
+      }
+    ]
   }
 ]

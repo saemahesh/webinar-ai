@@ -85,7 +85,8 @@ router.get('/:id', async (req, res) => {
       registrations: webinar.registrations || 0,
       customFields: webinar.customFields || [],
       videoPath: webinar.videoFile ? `/${webinar.videoFile.path}` : (webinar.videoPath || null),
-      hasVideo: webinar.hasVideo || false
+    hasVideo: webinar.hasVideo || false,
+    scheduledMessages: webinar.scheduledMessages || []
     };
     
     res.json({

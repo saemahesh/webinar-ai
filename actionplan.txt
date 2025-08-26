@@ -1,38 +1,33 @@
-Iteration Reset: 0
+ITERATION 10 - WEBINAR ROOM UI IMPROVEMENTS
 
-Focus: Fix custom fields issues
-Additional fixes this iteration
-- Replace browser confirm when removing custom fields with non-blocking toast
-- Gate webinar-room video: render/play only when status === 'live' to prevent pre-start playback
-- Add popup modal confirmation before removing a custom field (host view)
-- Show time remaining countdown (days:hours:minutes:seconds) in webinar room while waiting
-- 1) Removed custom field still shows historical columns for attendees with data
-- 2) Phone number type input renders on join form
-- 3) Newly added custom fields appear immediately without page refresh
- - 4) Phone validation: require 10-20 digits and acceptable symbols; enforce AngularJS validation
- - 5) Persist computed webinar status so it isn't always 'upcoming' after time passes
+Status: ✅ COMPLETED - WAITING FOR USER TESTING FEEDBACK
 
-Steps this iteration
-1) Compute union of configured labels and historical attendee customFields labels for attendees table columns
-2) Update attendees table to render with computed labels
-3) Add phone (tel) input rendering in join form
-4) Normalize saveFormSettings response handling and recompute columns after save
+Issues addressed:
+1. ✅ Hide participant count when "Time remaining" is showing
+   - Added ng-hide="roomState.status === 'waiting'" to participant count element
+   - Participant count now only shows when webinar is live/ended, not during waiting
 
-Changes applied
-- webinar-details.controller.js: add customFieldColumns, computeCustomFieldColumns, recompute on data changes
-- webinar-details.html: render table headers/cells using customFieldColumns
-- join-webinar.html: add type="tel" for field.type === 'phone'
-- webinar-details.controller.js: fix response handling in saveFormSettings
- - join-webinar.html: add form and custom field input names; phone ng-pattern/min/max lengths
- - join-webinar.controller.js: init checkbox arrays, toggle helper, normalize checkbox values on submit
- - server routes: compute and persist dynamic status in /api/webinars and /api/webinars/:id (host) and /api/public/webinars/:id
+2. ✅ Smart resume button and auto-play video functionality
+   - Added intelligent showResumeButton logic to webinar-room.controller.js
+   - Implemented auto-play with audio unmuting on webinar room entry
+   - Resume button only shows when video is actually paused and webinar is live
+   - Hidden during waiting/ended states
+   - Auto-play attempts when entering room, shows resume only if blocked by browser
+   - Added checkVideoState() function for smart state management
 
-Verification (manual)
-- Remove a custom field; attendee table still shows that column for past attendees
-- Add a new custom field; it appears immediately in builder and in attendees columns
-- Phone field appears on join page with tel input
- - Removing a custom field prompts a modal confirmation; confirm removes and saves, cancel does nothing
- - Waiting room shows a live countdown including days/hours/minutes/seconds
+Code changes made:
+- webinar-room.html: Added ng-hide condition for participant count
+- webinar-room.controller.js: Added showResumeButton, resumeVideo(), checkVideoState() functions
+- Enhanced auto-play logic with audio enablement and smart resume control
+- Integrated state checks in checkWebinarStatus() function
 
-Tracker
-- Last issues.txt read: 4
+Technical implementation:
+- Participant count visibility: ng-hide="roomState.status === 'waiting'"
+- Resume button visibility: Only when video.paused && webinar is live
+- Auto-play: Attempts on entry, muted=false, shows resume only if fails
+- State management: Checks video state on room initialization and status changes
+
+Waiting for user testing and feedback on:
+- Participant count visibility during countdown
+- Resume button behavior and auto-play functionality
+- Video audio playback working correctly

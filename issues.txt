@@ -21,12 +21,9 @@ Read Mandatory instructions to follow on every iteration:
  making code changes, and updating feedback in this file it self.
  iterate again on this file for issues and fix them
  
- once you fixed all issues listed below, run command 'echo "fixed issues"' , after running it, read the issues.txt again and fix the issues
+ once you fixed all issues listed below, run command 'echo "done fixing issues"' , after running it, read the issues.txt again and fix the issues
 --------------------------------------------------------
 **** Issue List ****
-in webinar room 
-participants count should be 0 before scheduledDate and time - fix it
 
-http://localhost:3000/webinar-room/5ab341c5-883f-4a20-ba5d-bfe884742d31 in this page 
-is someone joins before scheduledDate, showing webinar starts soon 
-but in desktop mode, keep it center inside video layout, curretnly no paading is given on top
+
+when time remaining countdown is 0,  video is not auto playing. its stuck

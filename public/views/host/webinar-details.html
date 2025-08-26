@@ -105,32 +105,37 @@
       <div class="border-b border-slate-700 bg-slate-900">
         <!-- Desktop Navigation -->
         <div class="hidden lg:flex">
-          <button ng-click="activeTab = 'overview'" 
+          <button ng-click="debugTabClick('overview')" 
                   ng-class="activeTab === 'overview' ? 'bg-slate-800 text-white border-primary-500' : 'text-slate-300 hover:text-white'"
                   class="flex-1 px-6 py-4 font-medium border-b-2 border-transparent transition-colors">
             Overview
           </button>
-          <button ng-click="activeTab = 'video'" 
+          <button ng-click="debugTabClick('video')" 
                   ng-class="activeTab === 'video' ? 'bg-slate-800 text-white border-primary-500' : 'text-slate-300 hover:text-white'"
                   class="flex-1 px-6 py-4 font-medium border-b-2 border-transparent transition-colors">
             Video Upload
           </button>
-          <button ng-click="activeTab = 'forms'" 
+          <button ng-click="debugTabClick('forms')" 
                   ng-class="activeTab === 'forms' ? 'bg-slate-800 text-white border-primary-500' : 'text-slate-300 hover:text-white'"
                   class="flex-1 px-6 py-4 font-medium border-b-2 border-transparent transition-colors">
             Registration Form
           </button>
-          <button ng-click="activeTab = 'attendees'" 
+          <button ng-click="debugTabClick('attendees')" 
                   ng-class="activeTab === 'attendees' ? 'bg-slate-800 text-white border-primary-500' : 'text-slate-300 hover:text-white'"
                   class="flex-1 px-6 py-4 font-medium border-b-2 border-transparent transition-colors">
             Attendees ({{webinar.registrations || 0}})
           </button>
-          <button ng-click="activeTab = 'analytics'" 
+          <button ng-click="debugTabClick('messages')" 
+                  ng-class="activeTab === 'messages' ? 'bg-slate-800 text-white border-primary-500' : 'text-slate-300 hover:text-white'"
+                  class="flex-1 px-6 py-4 font-medium border-b-2 border-transparent transition-colors">
+            Automated Messages
+          </button>
+          <button ng-click="debugTabClick('analytics')" 
                   ng-class="activeTab === 'analytics' ? 'bg-slate-800 text-white border-primary-500' : 'text-slate-300 hover:text-white'"
                   class="flex-1 px-6 py-4 font-medium border-b-2 border-transparent transition-colors">
             Analytics
           </button>
-          <button ng-click="activeTab = 'settings'" 
+          <button ng-click="debugTabClick('settings')" 
                   ng-class="activeTab === 'settings' ? 'bg-slate-800 text-white border-primary-500' : 'text-slate-300 hover:text-white'"
                   class="flex-1 px-6 py-4 font-medium border-b-2 border-transparent transition-colors">
             Settings
@@ -139,12 +144,13 @@
         
         <!-- Mobile Navigation -->
         <div class="lg:hidden">
-          <select ng-model="activeTab" 
+          <select ng-model="activeTab" ng-change="debugMobileSelect()"
                   class="w-full px-4 py-3 bg-slate-800 border border-slate-600 text-white rounded-none focus:ring-2 focus:ring-primary-500">
             <option value="overview">Overview</option>
             <option value="video">Video Upload</option>
             <option value="forms">Registration Form</option>
             <option value="attendees">Attendees ({{webinar.registrations || 0}})</option>
+            <option value="messages">Automated Messages</option>
             <option value="analytics">Analytics</option>
             <option value="settings">Settings</option>
           </select>
@@ -581,6 +587,84 @@
           </div>
         </div>
 
+        <!-- Automated Messages Tab -->
+        <div ng-if="activeTab === 'messages'">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-white">Automated Messages</h3>
+            <button ng-click="openMessageScheduler()" 
+                    class="bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+              🕒 Schedule Messages
+            </button>
+          </div>
+          
+          <div class="bg-slate-700 rounded-lg p-6 border border-slate-600 mb-6">
+            <p class="text-slate-300 mb-4">
+              Set up automated messages to be sent to participants at specific times during your webinar. 
+              Messages will only be delivered after the scheduled webinar start time.
+            </p>
+            
+            <!-- Current Scheduled Messages -->
+            <div ng-if="scheduledMessages.length > 0">
+              <h4 class="text-white font-semibold mb-4">Current Scheduled Messages ({{scheduledMessages.length}})</h4>
+              
+              <div class="space-y-3">
+                <div ng-repeat="message in scheduledMessages" 
+                     class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                  <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center space-x-3">
+                      <span class="bg-primary-600 text-white text-xs px-2 py-1 rounded">
+                        {{formatTimeDisplay(message.atSeconds)}}
+                      </span>
+                      <span class="bg-slate-600 text-slate-300 text-xs px-2 py-1 rounded">
+                        {{message.type || 'text'}}
+                      </span>
+                    </div>
+                    
+                    <!-- Edit and Delete Actions -->
+                    <div class="flex gap-2">
+                      <button ng-click="editSingleMessage(message)" 
+                              class="text-blue-400 hover:text-blue-300 text-sm px-2 py-1 rounded border border-blue-500 hover:bg-blue-500/10 transition-colors"
+                              title="Edit Message">
+                        ✏️ Edit
+                      </button>
+                      <button ng-click="deleteSingleMessage(message.id)" 
+                              class="text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded border border-red-500 hover:bg-red-500/10 transition-colors"
+                              title="Delete Message">
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="text-white mb-2">{{message.text}}</div>
+                  
+                  <!-- CTA Buttons Preview -->
+                  <div ng-if="message.type === 'cta' && message.buttons.length > 0" class="flex gap-2 mb-2">
+                    <span ng-repeat="btn in message.buttons" 
+                          class="bg-primary-600 text-white text-xs px-3 py-1 rounded">
+                      {{btn.label}}
+                    </span>
+                  </div>
+                  
+                  <!-- Image Preview -->
+                  <div ng-if="message.type === 'image' && message.imageUrl" class="mb-2">
+                    <img ng-src="{{message.imageUrl}}" alt="message image" 
+                         class="h-16 w-auto rounded border border-slate-600" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- No Messages -->
+            <div ng-if="scheduledMessages.length === 0" class="text-center py-8">
+              <div class="text-slate-400 mb-4">No automated messages scheduled yet</div>
+              <button ng-click="openMessageScheduler()" 
+                      class="bg-primary-600 hover:bg-primary-500 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                Create Your First Automated Message
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Analytics Tab -->
         <div ng-if="activeTab === 'analytics'">
           <h3 class="text-xl font-bold text-white mb-6">Analytics & Insights</h3>
@@ -842,4 +926,196 @@
     </div>
   </div>
 
+  <!-- Message Scheduler Modal -->
+  <div ng-if="messageScheduler.open" class="fixed inset-0 z-50 bg-black bg-opacity-60 overflow-y-auto">
+    <div class="min-h-screen flex items-start sm:items-center justify-center p-2 sm:p-4">
+      <div class="bg-slate-900 border border-slate-700 rounded-lg w-full max-w-sm sm:max-w-2xl lg:max-w-5xl shadow-xl max-h-[98vh] sm:max-h-[90vh] overflow-hidden flex flex-col my-2 sm:my-4">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-3 sm:p-4 border-b border-slate-700 flex-shrink-0">
+        <h3 class="text-white font-semibold text-base sm:text-lg">Schedule Automated Messages</h3>
+        <button class="text-slate-300 hover:text-white text-lg sm:text-xl" ng-click="closeMessageScheduler()">✕</button>
+      </div>
+      
+      <!-- Modal Content -->
+      <div class="flex flex-col lg:flex-row flex-1 min-h-0">
+        
+        <!-- Video Preview Section -->
+        <div class="w-full lg:w-1/2 bg-black border-b lg:border-b-0 lg:border-r border-slate-700 flex flex-col min-h-0">
+          <div class="p-3 sm:p-4 border-b border-slate-700 flex-shrink-0">
+            <h4 class="text-white font-medium mb-2 text-sm sm:text-base">Video Preview</h4>
+            <p class="text-slate-400 text-xs sm:text-sm">Pause the video at the exact time you want to send a message</p>
+          </div>
+          
+          <div class="flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0">
+            <div ng-if="messageScheduler.videoUrl" class="w-full">
+              <video id="schedulerVideo" 
+                     class="w-full h-auto max-h-48 sm:max-h-64 lg:max-h-96 bg-black rounded" 
+                     controls 
+                     preload="metadata"
+                     ng-src="{{messageScheduler.videoUrl}}">
+                Your browser does not support the video tag.
+              </video>
+              
+              <div class="mt-2 text-center">
+                <span class="text-slate-400 text-xs sm:text-sm">Current Time: </span>
+                <span class="text-white font-mono text-xs sm:text-sm">{{formatTimeDisplay(getCurrentVideoTime())}}</span>
+              </div>
+            </div>
+            
+            <div ng-if="!messageScheduler.videoUrl" class="text-center text-slate-400">
+              <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path>
+              </svg>
+              <p class="text-sm sm:text-base">No video uploaded yet</p>
+              <p class="text-xs sm:text-sm">Upload a video in the Video tab first</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Messages Configuration Section -->
+        <div class="w-full lg:w-1/2 flex flex-col min-h-0">
+          <div class="p-3 sm:p-4 border-b border-slate-700 flex-shrink-0">
+            <h4 class="text-white font-medium mb-3 text-sm sm:text-base">Add Messages</h4>
+            <div class="flex gap-2 flex-wrap">
+              <button class="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1.5 rounded text-xs sm:text-sm font-medium" 
+                      ng-click="addTextMessage()">📝 Text</button>
+              <button class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded text-xs sm:text-sm font-medium" 
+                      ng-click="addCTAMessage()">🔗 CTA</button>
+              <button class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs sm:text-sm font-medium" 
+                      ng-click="addImageMessage()">📷 Image</button>
+            </div>
+          </div>
+          
+          <!-- Messages List - Scrollable -->
+          <div class="flex-1 overflow-y-auto p-2 sm:p-4 min-h-0" style="max-height: 50vh;">
+            <div ng-if="messageScheduler.editing.length === 0" class="text-center text-slate-400 py-8">
+              <p class="text-sm sm:text-base">No messages scheduled yet</p>
+              <p class="text-xs sm:text-sm">Use the buttons above to add messages</p>
+            </div>
+            
+            <div ng-repeat="message in messageScheduler.editing track by message.id" 
+                 class="bg-slate-800 border border-slate-600 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+              
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-2">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <select class="bg-slate-700 text-white text-xs sm:text-sm px-2 py-1 rounded border border-slate-600 w-full sm:w-auto" 
+                          ng-model="message.type">
+                    <option value="text">Text</option>
+                    <option value="cta">CTA</option>
+                    <option value="image">Image</option>
+                  </select>
+                  
+                  <span class="text-slate-400 text-xs sm:text-sm">at</span>
+                  
+                  <div class="flex items-center gap-1 flex-wrap">
+                    <input type="number" min="0" max="23"
+                           class="bg-slate-700 text-white text-xs sm:text-sm px-1 sm:px-2 py-1 rounded border border-slate-600 w-12 sm:w-16" 
+                           ng-model="message.hours" ng-change="updateMessageTime(message)" placeholder="0" />
+                    <span class="text-slate-400 text-xs">h</span>
+                    
+                    <input type="number" min="0" max="59"
+                           class="bg-slate-700 text-white text-xs sm:text-sm px-1 sm:px-2 py-1 rounded border border-slate-600 w-12 sm:w-16" 
+                           ng-model="message.minutes" ng-change="updateMessageTime(message)" placeholder="0" />
+                    <span class="text-slate-400 text-xs">m</span>
+                    
+                    <input type="number" min="0" max="59"
+                           class="bg-slate-700 text-white text-xs sm:text-sm px-1 sm:px-2 py-1 rounded border border-slate-600 w-12 sm:w-16" 
+                           ng-model="message.seconds" ng-change="updateMessageTime(message)" placeholder="0" />
+                    <span class="text-slate-400 text-xs">s</span>
+                  </div>
+                </div>
+                
+                <button class="text-red-400 hover:text-red-300 self-end sm:self-start" 
+                        ng-click="removeScheduledMessage(message.id)">✕</button>
+              </div>
+              
+              <!-- Text Message -->
+              <div ng-if="message.type === 'text'">
+                <label class="block text-slate-400 text-xs sm:text-sm mb-1">Message Text</label>
+                <textarea class="w-full bg-slate-700 text-white text-xs sm:text-sm p-2 rounded border border-slate-600" 
+                          rows="2" ng-model="message.text" placeholder="Enter your message..."></textarea>
+              </div>
+              
+              <!-- CTA Message -->
+              <div ng-if="message.type === 'cta'">
+                <label class="block text-slate-400 text-xs sm:text-sm mb-1">Message Text</label>
+                <textarea class="w-full bg-slate-700 text-white text-xs sm:text-sm p-2 rounded border border-slate-600 mb-3" 
+                          rows="2" ng-model="message.text" placeholder="Enter CTA message..."></textarea>
+                
+                <label class="block text-slate-400 text-xs sm:text-sm mb-1">Buttons</label>
+                <div ng-repeat="button in message.buttons track by $index" class="flex flex-col sm:flex-row gap-2 mb-2">
+                  <input class="flex-1 bg-slate-700 text-white text-xs sm:text-sm p-2 rounded border border-slate-600" 
+                         ng-model="button.label" placeholder="Button text" />
+                  <input class="flex-1 bg-slate-700 text-white text-xs sm:text-sm p-2 rounded border border-slate-600" 
+                         ng-model="button.url" placeholder="https://..." />
+                  <button class="text-red-400 hover:text-red-300 px-2 self-end sm:self-center" 
+                          ng-click="removeCTAButton(message, $index)">✕</button>
+                </div>
+                <button class="text-primary-400 hover:text-primary-300 text-xs sm:text-sm" 
+                        ng-click="addCTAButton(message)">+ Add Button</button>
+              </div>
+              
+              <!-- Image Message -->
+              <div ng-if="message.type === 'image'">
+                <label class="block text-slate-400 text-xs sm:text-sm mb-1">Image URL</label>
+                <input class="w-full bg-slate-700 text-white text-xs sm:text-sm p-2 rounded border border-slate-600 mb-3" 
+                       ng-model="message.imageUrl" placeholder="https://..." />
+                
+                <label class="block text-slate-400 text-xs sm:text-sm mb-1">Caption (optional)</label>
+                <textarea class="w-full bg-slate-700 text-white text-xs sm:text-sm p-2 rounded border border-slate-600" 
+                          rows="2" ng-model="message.caption" placeholder="Image caption..."></textarea>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- Modal Footer -->
+      <div class="p-3 sm:p-4 border-t border-slate-700 flex flex-col sm:flex-row justify-end gap-2">
+        <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm sm:text-base order-2 sm:order-1" 
+                ng-click="closeMessageScheduler()">Cancel</button>
+        <button class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded disabled:opacity-60 text-sm sm:text-base order-1 sm:order-2" 
+                ng-disabled="messageScheduler.saving" ng-click="saveScheduledMessages()">
+          <span ng-if="!messageScheduler.saving">Save Messages</span>
+          <span ng-if="messageScheduler.saving">Saving...</span>
+        </button>
+      </div>
+      
+    </div>
+  </div>
+
+</div>
+
+<!-- Delete Confirmation Modal (Completely outside main container) -->
+<div ng-if="deleteConfirmation.open" 
+     class="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-90 p-4"
+     style="position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 99999 !important;">
+  <div class="bg-slate-900 border-2 border-red-500 rounded-lg w-full max-w-md shadow-2xl"
+       style="position: relative !important; z-index: 100000 !important;">
+    
+    <!-- Modal Header -->
+    <div class="p-4 border-b border-slate-700 bg-red-900/20">
+      <h3 class="text-white font-semibold text-lg flex items-center">
+        <span class="text-red-400 mr-2">⚠️</span>
+        {{deleteConfirmation.title}}
+      </h3>
+    </div>
+    
+    <!-- Modal Content -->
+    <div class="p-4">
+      <p class="text-slate-300 mb-4">{{deleteConfirmation.message}}</p>
+    </div>
+    
+    <!-- Modal Footer -->
+    <div class="p-4 border-t border-slate-700 flex justify-end gap-3">
+      <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-medium" 
+              ng-click="cancelDeleteMessage()">Cancel</button>
+      <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium" 
+              ng-click="confirmDeleteMessage()">Delete Message</button>
+    </div>
+    
+  </div>
 </div>
