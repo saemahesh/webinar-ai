@@ -1,0 +1,987 @@
+// Simple WebinarRoomController for testing
+angular.module('webinarApp')
+.controller('WebinarRoomController', ['$scope', '$stateParams', '$state', '$http', '$timeout', '$interval', 'ToastService', 'AuthService', '$sce',
+  function($scope, $stateParams, $state, $http, $timeout, $interval, ToastService, AuthService, $sce) {
+    
+    console.log('WebinarRoomController initialized');
+    console.log('Webinar ID:', $stateParams.webinarId);
+    
+    // Initialize scope variables
+    $scope.webinarId = $stateParams.webinarId;
+    $scope.webinar = null;
+    $scope.isLoading = true;
+    $scope.isRegistered = false;
+    $scope.attendee = null;
+    $scope.chatMessages = [];
+    $scope.isVideoLoaded = false;
+    $scope.videoError = false;
+    $scope.attendeeCount = 0;
+    $scope.isWebinarLive = true; // Force enable chat for testing
+    $scope.isLeavingRoom = false; // Track if user is leaving
+    $scope.showResumeButton = false; // Resume button state
+    $scope.hasUserResumed = false; // Track if user has manually resumed
+    
+    // Audio/Video controls (disabled by default)
+    $scope.micEnabled = false;
+    $scope.videoEnabled = false;
+    
+    // Use object for ng-model to avoid scope inheritance issues
+    $scope.chat = {
+      newMessage: ''
+    };
+    
+    // Chat visibility control
+    $scope.chatHidden = false;
+    
+    $scope.toggleChat = function() {
+      console.log('Toggle chat clicked - current state:', $scope.chatHidden);
+      $scope.chatHidden = !$scope.chatHidden;
+      console.log('Chat toggled - new state:', $scope.chatHidden ? 'HIDDEN' : 'VISIBLE');
+      
+      // Force scope update
+      if (!$scope.$$phase) {
+        $scope.$apply();
+      }
+    };
+    
+    // Audio/Video control functions
+    $scope.toggleMicrophone = function() {
+      $scope.micEnabled = !$scope.micEnabled;
+      console.log('Microphone toggled:', $scope.micEnabled ? 'ON' : 'OFF');
+      // Here you would typically interface with getUserMedia API
+      // For now, just visual feedback
+    };
+    
+    $scope.toggleVideo = function() {
+      $scope.videoEnabled = !$scope.videoEnabled;
+      console.log('Video toggled:', $scope.videoEnabled ? 'ON' : 'OFF');
+      // Here you would typically interface with getUserMedia API
+      // For now, just visual feedback
+    };
+    
+    console.log('WebinarRoomController - Chat enabled for testing:', $scope.isWebinarLive);
+    
+    // Add test message to verify chat is working
+    $scope.chatMessages.push({
+      sender: 'Host',
+      message: 'Welcome to the webinar! Chat is enabled.',
+      timestamp: new Date(),
+      isSystem: false
+    });
+    
+    console.log('Initial chat messages:', $scope.chatMessages);
+    
+    // Host control panel integration
+    $scope.isHost = false;
+    $scope.showHostControls = false;
+    
+    // Room state management
+    $scope.roomState = {
+      status: 'loading', // loading, waiting, live, ended
+      currentTime: new Date(),
+      webinarStartTime: null,
+      timeToStart: 0
+    };
+
+    // Countdown interval ref
+    let countdownInterval = null;
+
+    function startCountdown() {
+      stopCountdown();
+      countdownInterval = $interval(function() {
+        try {
+          if (!$scope.webinar || !$scope.webinar.scheduledDate) return;
+          const now = new Date();
+          const startTime = new Date($scope.webinar.scheduledDate);
+          $scope.roomState.timeToStart = Math.max(0, startTime.getTime() - now.getTime());
+          if ($scope.roomState.status !== 'waiting' || $scope.roomState.timeToStart <= 0) {
+            stopCountdown();
+          }
+        } catch (e) { /* ignore */ }
+      }, 1000);
+    }
+
+    function stopCountdown() {
+      if (countdownInterval) {
+        $interval.cancel(countdownInterval);
+        countdownInterval = null;
+      }
+    }
+
+    // Compute a trusted video URL for the template (used by ng-src)
+    $scope.getVideoUrl = function() {
+      try {
+        var path = $scope.webinar && $scope.webinar.videoPath ? $scope.webinar.videoPath : null;
+        if (!path) {
+          return null;
+        }
+        // If absolute (http/https), use as-is; else prefix with origin
+        var isAbsolute = /^https?:\/\//i.test(path);
+        var url = isAbsolute ? path : (window.location.origin + (path.startsWith('/') ? path : '/' + path));
+        return $sce.trustAsResourceUrl(url);
+      } catch (e) {
+        console.error('Error building video URL:', e);
+        return null;
+      }
+    };
+
+    // Expose a cached URL too (optional); will be set when webinar loads
+    $scope.videoUrl = null;
+    
+    // Load webinar details
+    $scope.loadWebinar = function() {
+      $scope.isLoading = true;
+      
+      console.log('Starting webinar load process...');
+      console.log('User authenticated:', AuthService.isLoggedIn());
+      
+      // Simplified approach - go directly to public API for attendees
+      if (!AuthService.isLoggedIn()) {
+        console.log('User not authenticated, using public API directly');
+        $http.get(`/api/public/webinars/${$scope.webinarId}`)
+          .then(function(response) {
+            console.log('Public API response:', response.data);
+            $scope.webinar = response.data.webinar || response.data;
+            
+            if ($scope.webinar) {
+              $scope.roomState.webinarStartTime = new Date($scope.webinar.scheduledDate);
+              
+              // Check if webinar/video has ended before allowing entry (30 min video duration)
+              const now = new Date();
+              const startTime = new Date($scope.webinar.scheduledDate);
+              const elapsedMinutes = Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60));
+              
+              // If webinar started and more than 30 minutes have passed (video duration)
+              if (now >= startTime && elapsedMinutes >= 30) {
+                console.log('Webinar/video has ended (30min), redirecting to ended page');
+                $scope.redirectToEndedPage();
+                return;
+              }
+              
+              $scope.checkWebinarStatus();
+              $scope.loadAttendeeInfo();
+              $scope.checkHostPermissions();
+              $scope.initializeRoom();
+
+              // Set computed, trusted video URL for template binding
+              $scope.videoUrl = $scope.getVideoUrl();
+            } else {
+              ToastService.error('Webinar not found');
+              $state.go('join', { webinarId: $scope.webinarId });
+            }
+          })
+          .catch(function(error) {
+            console.error('Public API error:', error);
+            ToastService.error('Failed to load webinar details');
+            $scope.isLoading = false;
+          });
+      } else {
+        console.log('User authenticated, trying host API');
+        // Authenticated user - try host API
+        $http.get(`/api/webinars/${$scope.webinarId}`)
+          .then(function(response) {
+            console.log('Host API response:', response.data);
+            $scope.webinar = response.data.webinar || response.data;
+            
+            if ($scope.webinar) {
+              $scope.roomState.webinarStartTime = new Date($scope.webinar.scheduledDate);
+              
+              // Check if webinar/video has ended before allowing entry (30 min video duration)
+              const now = new Date();
+              const startTime = new Date($scope.webinar.scheduledDate);
+              const elapsedMinutes = Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60));
+              
+              // If webinar started and more than 30 minutes have passed (video duration)
+              if (now >= startTime && elapsedMinutes >= 30) {
+                console.log('Webinar/video has ended (30min), redirecting to ended page');
+                $scope.redirectToEndedPage();
+                return;
+              }
+              
+              $scope.checkWebinarStatus();
+              $scope.loadAttendeeInfo();
+              $scope.checkHostPermissions();
+              $scope.initializeRoom();
+
+              // Set computed, trusted video URL for template binding
+              $scope.videoUrl = $scope.getVideoUrl();
+            } else {
+              ToastService.error('Webinar not found');
+              $state.go('join', { webinarId: $scope.webinarId });
+            }
+          })
+          .catch(function(error) {
+            console.error('Host API error, falling back to public:', error);
+            // Fallback to public API
+            $http.get(`/api/public/webinars/${$scope.webinarId}`)
+              .then(function(response) {
+                console.log('Public API fallback response:', response.data);
+                $scope.webinar = response.data.webinar || response.data;
+                
+                if ($scope.webinar) {
+                  $scope.roomState.webinarStartTime = new Date($scope.webinar.scheduledDate);
+                  
+                  // Check if webinar/video has ended before allowing entry (30 min video duration)
+                  const now = new Date();
+                  const startTime = new Date($scope.webinar.scheduledDate);
+                  const elapsedMinutes = Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60));
+                  
+                  // If webinar started and more than 30 minutes have passed (video duration)
+                  if (now >= startTime && elapsedMinutes >= 30) {
+                    console.log('Webinar/video has ended (30min), redirecting to ended page');
+                    $scope.redirectToEndedPage();
+                    return;
+                  }
+                  
+                  $scope.checkWebinarStatus();
+                  $scope.loadAttendeeInfo();
+                  $scope.checkHostPermissions();
+                  $scope.initializeRoom();
+
+                  // Set computed, trusted video URL for template binding
+                  $scope.videoUrl = $scope.getVideoUrl();
+                } else {
+                  ToastService.error('Webinar not found');
+                  $state.go('join', { webinarId: $scope.webinarId });
+                }
+              })
+              .catch(function(publicError) {
+                console.error('Both APIs failed:', publicError);
+                ToastService.error('Failed to load webinar details');
+                $scope.isLoading = false;
+              });
+          });
+      }
+    };
+    
+    // Check if current user is registered for this webinar
+    $scope.loadAttendeeInfo = function() {
+      const savedRegistration = localStorage.getItem(`registration_${$scope.webinarId}`);
+      
+      if (savedRegistration) {
+        $scope.attendee = JSON.parse(savedRegistration);
+        $scope.isRegistered = true;
+        console.log('Attendee registration found:', $scope.attendee);
+      } else {
+        console.log('No registration found, redirecting to join page');
+        $state.go('join', { webinarId: $scope.webinarId });
+      }
+    };
+    
+    // Check webinar status (waiting, live, ended) with IST timezone support
+    $scope.checkWebinarStatus = function() {
+      // Get current time in IST
+      const now = new Date();
+      console.log('Current UTC time:', now.toISOString());
+      console.log('Current IST time:', now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+      
+      const startTime = new Date($scope.webinar.scheduledDate);
+      console.log('Webinar UTC start time:', startTime.toISOString());
+      console.log('Webinar IST start time:', startTime.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+      
+      const endTime = new Date(startTime.getTime() + ($scope.webinar.duration * 60 * 1000));
+      console.log('Webinar IST end time:', endTime.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+      
+      $scope.roomState.currentTime = now;
+      $scope.roomState.timeToStart = Math.max(0, startTime.getTime() - now.getTime());
+      
+      // Calculate timezone-aware status
+      const timeDiff = now.getTime() - startTime.getTime();
+      const endTimeDiff = now.getTime() - endTime.getTime();
+      
+      console.log('Time difference from start (minutes):', Math.round(timeDiff / (1000 * 60)));
+      console.log('Time difference from end (minutes):', Math.round(endTimeDiff / (1000 * 60)));
+      
+      if (now < startTime) {
+        $scope.roomState.status = 'waiting';
+        $scope.isWebinarLive = false;
+        $scope.webinarStatus = 'upcoming';
+        console.log('Webinar is UPCOMING - starts in', Math.ceil($scope.roomState.timeToStart / (1000 * 60)), 'minutes');
+        startCountdown();
+  } else if (now >= startTime && now < endTime) {
+        // Check if video has ended even though webinar duration hasn't ended
+        const elapsedMinutes = Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60));
+        
+        // Try to get video duration to check if video has ended
+        const video = document.getElementById('webinarVideo');
+        let videoDurationMinutes = null;
+        if (video && video.duration && !isNaN(video.duration)) {
+          videoDurationMinutes = Math.floor(video.duration / 60);
+          console.log('Video duration detected:', videoDurationMinutes, 'minutes');
+        }
+        
+        // If we have video duration and elapsed time exceeds it, treat as ended
+        if (videoDurationMinutes && elapsedMinutes >= videoDurationMinutes) {
+          console.log('Video duration (' + videoDurationMinutes + ' min) exceeded, treating webinar as ended even though scheduled duration not reached');
+          $scope.roomState.status = 'ended';
+          $scope.isWebinarLive = false;
+          $scope.webinarStatus = 'ended';
+          $scope.redirectToEndedPage();
+          return;
+        }
+        
+        // If no video duration available, estimate based on common pattern (30 minutes)
+        // This is a fallback for cases where video hasn't loaded yet
+        if (!videoDurationMinutes && elapsedMinutes >= 30) {
+          console.log('Estimated video duration (30 min) exceeded, treating webinar as ended');
+          $scope.roomState.status = 'ended';
+          $scope.isWebinarLive = false;
+          $scope.webinarStatus = 'ended';
+          $scope.redirectToEndedPage();
+          return;
+        }
+        
+        $scope.roomState.status = 'live';
+        $scope.isWebinarLive = true;
+        $scope.webinarStatus = 'live';
+        console.log('Webinar is LIVE - started', Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60)), 'minutes ago');
+        
+        // Auto-play video when webinar goes live (handled later in initialize/start monitoring)
+        setTimeout(function() {
+          if ($scope.webinar.videoPath && !$scope.videoError) {
+            console.log('Webinar is live. Video will be started by initialize/monitor when element is present.');
+            // No direct call here to avoid races before element exists
+            // Announce go-live as Host
+            $scope.chatMessages.push({ sender: 'Host', message: 'We are live. Thanks for joining!', timestamp: new Date(), isSystem: false });
+          }
+        }, 1000);
+      } else {
+        $scope.roomState.status = 'ended';
+        $scope.isWebinarLive = false;
+        $scope.webinarStatus = 'ended';
+        console.log('Webinar has ENDED - ended', Math.floor((now.getTime() - endTime.getTime()) / (1000 * 60)), 'minutes ago');
+  stopCountdown();
+        
+        // If webinar has ended, block access and redirect
+        $scope.redirectToEndedPage();
+        return;
+      }
+      
+      // For testing purposes - enable chat in all states except ended
+      if ($scope.webinarStatus !== 'ended') {
+        $scope.isWebinarLive = true;
+        console.log('Chat enabled for testing - isWebinarLive:', $scope.isWebinarLive);
+      }
+      
+      $scope.isLoading = false;
+    };
+
+    // Format time remaining as DD days HH:MM:SS (days omitted if 0)
+    $scope.formatTimeToStart = function() {
+      let ms = Math.max(0, $scope.roomState.timeToStart || 0);
+      const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+      ms -= days * 24 * 60 * 60 * 1000;
+      const hours = Math.floor(ms / (60 * 60 * 1000));
+      ms -= hours * 60 * 60 * 1000;
+      const minutes = Math.floor(ms / (60 * 1000));
+      ms -= minutes * 60 * 1000;
+      const seconds = Math.floor(ms / 1000);
+      const hh = hours.toString().padStart(2, '0');
+      const mm = minutes.toString().padStart(2, '0');
+      const ss = seconds.toString().padStart(2, '0');
+      return (days > 0 ? (days + 'd ') : '') + hh + ':' + mm + ':' + ss;
+    };
+    
+    // Check host permissions
+    $scope.checkHostPermissions = function() {
+      if (AuthService.isLoggedIn() && $scope.webinar) {
+        const currentUser = AuthService.getCurrentUser();
+        $scope.isHost = (currentUser && currentUser.email === $scope.webinar.hostEmail);
+        
+        if ($scope.isHost) {
+          console.log('Host detected, enabling host controls');
+        }
+      }
+    };
+    
+    // Simple functions
+    $scope.testChat = function() {
+      console.log('testChat function called');
+      $scope.chatMessages.push({
+        sender: 'Host',
+        message: 'This is a test message',
+        timestamp: new Date(),
+        isSystem: false
+      });
+      console.log('Test message added, total messages:', $scope.chatMessages.length);
+    };
+    
+    $scope.sendMessage = function() {
+      console.log('sendMessage called');
+      console.log('chat.newMessage value:', $scope.chat.newMessage);
+      console.log('chat.newMessage type:', typeof $scope.chat.newMessage);
+      
+      if ($scope.chat.newMessage && $scope.chat.newMessage.trim()) {
+        const message = {
+          sender: $scope.attendee ? $scope.attendee.name : ($scope.currentUser ? $scope.currentUser.name : 'Anonymous'),
+          message: $scope.chat.newMessage.trim(),
+          timestamp: new Date(),
+          isSystem: false
+        };
+        
+        $scope.chatMessages.push(message);
+        console.log('Message added to chat:', message);
+        console.log('Total messages now:', $scope.chatMessages.length);
+        
+        $scope.chat.newMessage = '';
+        
+        // Force apply scope changes
+        if (!$scope.$$phase) {
+          $scope.$apply();
+        }
+        
+        // Scroll to bottom of chat
+        $timeout(function() {
+          const chatContainer = document.getElementById('chatContainer');
+          if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            console.log('Scrolled chat to bottom');
+          }
+        }, 50);
+      } else {
+        console.log('Message not sent - empty or whitespace only');
+        console.log('chat.newMessage is:', JSON.stringify($scope.chat.newMessage));
+      }
+    };
+    
+    $scope.leaveRoom = function() {
+      console.log('Leave room function called - starting navigation');
+      
+      // Show loading to prevent multiple clicks
+      $scope.isLeavingRoom = true;
+      
+      // Clear any stored webinar data
+      console.log('Clearing webinar data from localStorage');
+      localStorage.removeItem(`registration_${$scope.webinarId}`);
+      
+      // Show success message
+      ToastService.success('Thank you for attending!');
+      
+      // Navigate to home page with a small delay to ensure UI updates
+      setTimeout(function() {
+        console.log('Navigating to home page');
+        $state.go('home');
+        
+        // Force page reload after navigation to ensure clean state
+        setTimeout(function() {
+          window.location.href = '/';
+        }, 100);
+      }, 500);
+    };
+    
+    // Handle ended webinar redirect
+    $scope.redirectToEndedPage = function() {
+      console.log('Redirecting to ended page - webinar has finished');
+      // Store ended webinar info for display
+      localStorage.setItem(`ended_webinar_${$scope.webinarId}`, JSON.stringify({
+        title: $scope.webinar.title,
+        endedAt: new Date().toISOString(),
+        message: 'Thank you for attending!'
+      }));
+      
+      // Redirect to a thank you/ended page
+      $state.go('webinar-ended', { webinarId: $scope.webinarId });
+    };
+    
+    // Video handling functions
+    $scope.checkVideoLoad = function() {
+      console.log('=== checkVideoLoad() called ===');
+      const video = document.getElementById('webinarVideo');
+      if (video) {
+        console.log('Video element found in checkVideoLoad:');
+        console.log('- src:', video.src);
+        console.log('- readyState:', video.readyState, '(0=HAVE_NOTHING, 1=HAVE_METADATA, 2=HAVE_CURRENT_DATA, 3=HAVE_FUTURE_DATA, 4=HAVE_ENOUGH_DATA)');
+        console.log('- videoWidth:', video.videoWidth);
+        console.log('- videoHeight:', video.videoHeight);
+        console.log('- duration:', video.duration);
+        console.log('- error:', video.error);
+        
+        // Check if video is loaded
+        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+          console.log('✅ Video loaded successfully - readyState >= 2');
+          $scope.isVideoLoaded = true;
+          $scope.videoError = false;
+          
+          // Set video to correct time position for live simulation
+          $timeout(function() {
+            const currentTime = $scope.calculateLiveVideoTime();
+            if (currentTime !== null && currentTime > 0) {
+              video.currentTime = currentTime;
+              console.log('Video loaded - setting initial time to:', currentTime, 'seconds');
+            }
+            
+            // Start time synchronization for live webinars
+            console.log('Starting time synchronization...');
+            $scope.startTimeSynchronization();
+            
+            // Check if resume button should be shown (for refresh cases)
+            $timeout(function() {
+              console.log('Checking for resume state...');
+              $scope.checkForResumeState();
+            }, 1000);
+          }, 500);
+          
+        } else if (video.error) {
+          console.error('❌ Video loading error:', video.error);
+          console.log('Error details:', {
+            code: video.error.code,
+            message: video.error.message
+          });
+          $scope.videoError = true;
+          $scope.isVideoLoaded = false;
+        } else {
+          // Still loading, check again in 500ms
+          console.log('⏳ Video still loading, readyState:', video.readyState, '- checking again in 500ms');
+          $timeout($scope.checkVideoLoad, 500);
+        }
+      } else {
+        console.error('❌ Video element not found in checkVideoLoad');
+      }
+    };
+    
+    // Start checking video load when webinar path is available
+    $scope.$watch('webinar.videoPath', function(newVal) {
+      if (newVal) {
+        console.log('Video path available, starting load check');
+  // Update cached URL for template
+  $scope.videoUrl = $scope.getVideoUrl();
+        $timeout($scope.checkVideoLoad, 100);
+      }
+    });
+    
+    $scope.playVideo = function() {
+      console.log('=== playVideo() called - SIMPLIFIED VERSION ===');
+      const video = document.getElementById('webinarVideo');
+      if (video) {
+        console.log('Video element found:');
+        console.log('- src:', video.src);
+        console.log('- readyState:', video.readyState);
+        console.log('- videoWidth:', video.videoWidth);
+        console.log('- videoHeight:', video.videoHeight);
+        console.log('- duration:', video.duration);
+        console.log('- currentTime before:', video.currentTime);
+        console.log('- paused:', video.paused);
+        
+        // SIMPLIFIED: Just play without time sync for now
+        console.log('Attempting simple video play...');
+        video.play().then(function() {
+          console.log('✅ Video play() succeeded');
+          console.log('- paused after play:', video.paused);
+          console.log('- muted:', video.muted);
+          console.log('- volume:', video.volume);
+        }).catch(function(error) {
+          console.error('❌ Error playing video:', error);
+          console.log('Error details:', {
+            name: error.name,
+            message: error.message,
+            code: error.code
+          });
+        });
+      } else {
+        console.error('❌ Video element not found in playVideo()');
+      }
+    };
+    
+    // Calculate what time the video should be at based on webinar start time
+    $scope.calculateLiveVideoTime = function() {
+      if (!$scope.webinar || !$scope.webinar.scheduledDate) {
+        return null;
+      }
+      
+      const now = new Date();
+      const webinarStartTime = new Date($scope.webinar.scheduledDate);
+      
+      // If webinar hasn't started yet, return 0
+      if (now < webinarStartTime) {
+        return 0;
+      }
+      
+      // Calculate how many seconds have passed since webinar started
+      const elapsedSeconds = Math.floor((now.getTime() - webinarStartTime.getTime()) / 1000);
+      
+      console.log('Webinar started at:', webinarStartTime);
+      console.log('Current time:', now);
+      console.log('Elapsed seconds since start:', elapsedSeconds);
+      
+      return elapsedSeconds;
+    };
+    
+    // Start time synchronization for live simulation
+    $scope.startTimeSynchronization = function() {
+      if ($scope.roomState.status === 'live' && $scope.webinar.videoPath) {
+        const syncInterval = setInterval(function() {
+          const video = document.getElementById('webinarVideo');
+          if (video && !video.paused) {
+            const expectedTime = $scope.calculateLiveVideoTime();
+            const currentVideoTime = video.currentTime;
+            const timeDifference = Math.abs(expectedTime - currentVideoTime);
+            
+            // If video is more than 3 seconds off, resync
+            if (timeDifference > 3) {
+              console.log('Resyncing video time. Expected:', expectedTime, 'Current:', currentVideoTime);
+              video.currentTime = expectedTime;
+            }
+          }
+          
+          // Stop syncing if webinar is no longer live
+          if ($scope.roomState.status !== 'live') {
+            clearInterval(syncInterval);
+          }
+        }, 10000); // Check every 10 seconds
+        
+        // Clear interval when leaving the page
+        window.addEventListener('beforeunload', function() {
+          clearInterval(syncInterval);
+        });
+      }
+    };
+    
+    $scope.pauseVideo = function() {
+      const video = document.getElementById('webinarVideo');
+      if (video) {
+        video.pause();
+      }
+    };
+    
+    $scope.toggleVideo = function() {
+      const video = document.getElementById('webinarVideo');
+      if (video) {
+        if (video.paused) {
+          $scope.playVideo();
+        } else {
+          $scope.pauseVideo();
+        }
+      }
+    };
+    
+    // Resume video functionality (for after refresh)
+    $scope.resumeVideo = function() {
+      console.log('Resume video clicked');
+      $scope.showResumeButton = false;
+      $scope.hasUserResumed = true;
+      
+      const video = document.getElementById('webinarVideo');
+      if (video && $scope.webinar.videoPath) {
+        // Calculate correct time position for live simulation
+        const currentTime = $scope.calculateLiveVideoTime();
+        if (currentTime !== null && currentTime > 0) {
+          video.currentTime = currentTime;
+          console.log('Resuming video at time:', currentTime, 'seconds');
+        }
+        
+        video.play().then(() => {
+          console.log('Video resumed successfully');
+          // Hide all other controls after resume
+          $scope.hideOtherControlsAfterResume();
+        }).catch(error => {
+          console.error('Error resuming video:', error);
+        });
+      }
+    };
+    
+    // Hide other video controls after manual resume
+    $scope.hideOtherControlsAfterResume = function() {
+      // You can add logic here to hide other video controls if needed
+      console.log('Video resumed - other controls can be managed here');
+    };
+    
+    // Check if video should show resume button (on refresh during live webinar)
+    $scope.checkForResumeState = function() {
+      if ($scope.roomState.status === 'live' && $scope.webinar.videoPath && !$scope.hasUserResumed) {
+        const video = document.getElementById('webinarVideo');
+        if (video && video.paused) {
+          console.log('Live webinar detected with paused video - showing resume button');
+          $scope.showResumeButton = true;
+        }
+      }
+    };
+    
+    // Simulate attendee count changes according to time-based rules
+    // - Ramp from ~23 to 232 over first 5 minutes after start
+    // - Mid-session: change by ±3..±10 each minute around ~232
+    // - Last 10 minutes: ramp down smoothly toward 150–180
+    $scope.startAttendeeSimulation = function() {
+      const storageKey = `attendeeCount_${$scope.webinarId}`;
+      const metaKey = `attendeeCountMeta_${$scope.webinarId}`;
+      const lastUpdateKey = `lastAttendeeUpdate_${$scope.webinarId}`;
+
+      const startTime = new Date($scope.webinar.scheduledDate).getTime();
+      const durationMs = ($scope.webinar.duration || 60) * 60 * 1000; // default 60 mins
+      const endTime = startTime + durationMs;
+
+      let storedCount = parseInt(localStorage.getItem(storageKey), 10);
+      if (isNaN(storedCount)) storedCount = null;
+      let meta = null;
+      try { meta = JSON.parse(localStorage.getItem(metaKey) || 'null'); } catch (e) { meta = null; }
+      if (!meta || typeof meta.targetEnd !== 'number') {
+        meta = { targetEnd: Math.floor(150 + Math.random() * 31) }; // 150-180
+      }
+
+      const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+
+      function computeExpectedCount(nowMs) {
+        if (nowMs < startTime) {
+          // Before the webinar starts, participant count should be 0
+          return 0;
+        }
+        if (nowMs >= endTime) {
+          return meta.targetEnd;
+        }
+        const elapsed = nowMs - startTime;
+        const remaining = endTime - nowMs;
+        const rampUpMs = 5 * 60 * 1000;
+        if (elapsed <= rampUpMs) {
+          const frac = clamp(elapsed / rampUpMs, 0, 1);
+          return 23 + Math.round((232 - 23) * frac);
+        }
+        const rampDownMs = 10 * 60 * 1000;
+        if (remaining <= rampDownMs) {
+          const frac = clamp(1 - (remaining / rampDownMs), 0, 1);
+          return 232 + Math.round((meta.targetEnd - 232) * frac);
+        }
+        return 232; // mid-session
+      }
+
+      // Initialize count
+      const nowInit = Date.now();
+      const expectedNow = computeExpectedCount(nowInit);
+      if (storedCount === null) {
+        // Initialize with expected value; before start this will be 0
+        $scope.attendeeCount = clamp(expectedNow, 0, 500);
+      } else {
+        const delta = expectedNow - storedCount;
+        const step = clamp(Math.sign(delta) * Math.min(Math.abs(delta), 7), -7, 7);
+        $scope.attendeeCount = clamp(storedCount + step, 0, 500);
+      }
+
+      localStorage.setItem(storageKey, String($scope.attendeeCount));
+      localStorage.setItem(metaKey, JSON.stringify(meta));
+      localStorage.setItem(lastUpdateKey, String(nowInit));
+      console.log('Attendee count (init):', $scope.attendeeCount);
+
+      // Use $interval for continuous real-time updates every 5 seconds
+      const attendeeInterval = $interval(function() {
+        const now = Date.now();
+        const lastUpdate = parseInt(localStorage.getItem(lastUpdateKey), 10) || now;
+        const timeSinceLastUpdate = now - lastUpdate;
+        
+        // Only update if enough time has passed based on current phase
+        let requiredInterval = 60000; // default 1 minute
+        if (now < startTime) {
+          requiredInterval = 30000; // 30 seconds before start
+        } else if (now >= startTime && now <= startTime + 5 * 60 * 1000) {
+          requiredInterval = 10000; // 10 seconds during ramp-up
+        } else if (now >= endTime - 10 * 60 * 1000 && now < endTime) {
+          requiredInterval = 10000; // 10 seconds during ramp-down
+        }
+
+    if (timeSinceLastUpdate >= requiredInterval) {
+          const expected = computeExpectedCount(now);
+          
+          if (now < startTime) {
+            const delta = expected - $scope.attendeeCount;
+            const step = clamp(Math.sign(delta) * Math.min(Math.abs(delta), 2), -2, 2);
+      $scope.attendeeCount = clamp($scope.attendeeCount + step, 0, 500);
+          } else if (now >= startTime && now <= startTime + 5 * 60 * 1000) {
+            const delta = expected - $scope.attendeeCount;
+            const stepMag = clamp(Math.min(Math.abs(delta), Math.floor(3 + Math.random() * 7)), 1, 12);
+            const step = Math.sign(delta) * stepMag;
+      $scope.attendeeCount = clamp($scope.attendeeCount + step, 0, 500);
+          } else if (now >= endTime - 10 * 60 * 1000 && now < endTime) {
+            const delta = expected - $scope.attendeeCount;
+            const stepMag = clamp(Math.min(Math.abs(delta), Math.floor(2 + Math.random() * 6)), 1, 10);
+            const step = Math.sign(delta) * stepMag;
+      $scope.attendeeCount = clamp($scope.attendeeCount + step, 0, 500);
+          } else if (now >= endTime) {
+            const delta = expected - $scope.attendeeCount;
+            const step = clamp(Math.sign(delta) * Math.min(Math.abs(delta), 2), -2, 2);
+      $scope.attendeeCount = clamp($scope.attendeeCount + step, 0, 500);
+          } else {
+            // Mid-session: ±3 to ±10 changes with gentle pull toward 232
+            const pull = clamp(232 - $scope.attendeeCount, -5, 5);
+            const magnitude = Math.floor(3 + Math.random() * 8); // 3-10
+            const sign = Math.random() < 0.5 ? -1 : 1;
+            const randomStep = sign * magnitude;
+      $scope.attendeeCount = clamp($scope.attendeeCount + pull + randomStep, 0, 500);
+          }
+
+          localStorage.setItem(storageKey, String($scope.attendeeCount));
+          localStorage.setItem(metaKey, JSON.stringify(meta));
+          localStorage.setItem(lastUpdateKey, String(now));
+          console.log('Attendee count updated to:', $scope.attendeeCount, 'at', new Date(now).toLocaleTimeString());
+        }
+      }, 5000); // Check every 5 seconds for real-time behavior
+
+      $scope.$on('$destroy', function() {
+        if (attendeeInterval) {
+          $interval.cancel(attendeeInterval);
+        }
+        stopCountdown();
+      });
+    };
+
+    // Initialize room (basic simulation)
+    $scope.initializeRoom = function() {
+      // Start attendee simulation with time-based behavior
+      $scope.startAttendeeSimulation();
+      
+      // Add some sample chat messages
+      $scope.chatMessages = [
+        { sender: 'Host', message: 'Welcome to the webinar!', timestamp: new Date(), isSystem: false },
+        { sender: 'Alice', message: 'Looking forward to this session!', timestamp: new Date(), isSystem: false }
+      ];
+      
+      // Debug video path
+      console.log('Webinar video path:', $scope.webinar.videoPath);
+      console.log('Webinar hasVideo:', $scope.webinar.hasVideo);
+      if ($scope.webinar.videoPath) {
+        console.log('Video should be available at:', $scope.webinar.videoPath);
+      } else {
+        console.log('No video path found in webinar data');
+        console.log('Full webinar object:', $scope.webinar);
+      }
+      
+      // If webinar is currently live, try to start video immediately
+  if ($scope.roomState.status === 'live' && $scope.webinar.videoPath) {
+        setTimeout(function() {
+          console.log('Attempting to auto-play video for live webinar with time sync');
+          $scope.playVideo();
+        }, 2000);
+      }
+    };
+    
+    // Initialize controller
+    $scope.loadWebinar();
+    
+    // Start periodic status checking for waiting webinars
+    $scope.startStatusMonitoring = function() {
+      if ($scope.roomState.status === 'waiting') {
+        const statusCheckInterval = setInterval(function() {
+          $scope.checkWebinarStatus();
+          
+          // If webinar has gone live, start video and clear interval
+          if ($scope.roomState.status === 'live') {
+            console.log('Webinar has gone live! Starting video...');
+            setTimeout(function() {
+              if ($scope.webinar.videoPath && !$scope.videoError) {
+                $scope.playVideo();
+              }
+            }, 1000);
+            clearInterval(statusCheckInterval);
+          }
+          
+          $scope.$apply();
+        }, 5000); // Check every 5 seconds
+        
+        // Clear interval when leaving the page
+        window.addEventListener('beforeunload', function() {
+          clearInterval(statusCheckInterval);
+        });
+      }
+    };
+    
+    // Start monitoring after webinar loads
+    setTimeout(function() {
+      $scope.startStatusMonitoring();
+    }, 1000);
+    
+    // Video event handlers for HTML video element
+    $scope.onVideoLoad = function() {
+      console.log('=== onVideoLoad() called from HTML event ===');
+      const video = document.getElementById('webinarVideo');
+      if (video) {
+        console.log('Video load event - readyState:', video.readyState);
+        console.log('Video dimensions:', video.videoWidth + 'x' + video.videoHeight);
+        console.log('Video duration:', video.duration);
+        
+        // DEBUG: Check computed styles and actual dimensions
+        const computedStyle = window.getComputedStyle(video);
+        console.log('=== VIDEO ELEMENT DEBUGGING ===');
+        console.log('Element dimensions:');
+        console.log('- offsetWidth:', video.offsetWidth);
+        console.log('- offsetHeight:', video.offsetHeight);
+        console.log('- clientWidth:', video.clientWidth);
+        console.log('- clientHeight:', video.clientHeight);
+        console.log('- getBoundingClientRect:', video.getBoundingClientRect());
+        
+        console.log('Computed styles:');
+        console.log('- width:', computedStyle.width);
+        console.log('- height:', computedStyle.height);
+        console.log('- minWidth:', computedStyle.minWidth);
+        console.log('- minHeight:', computedStyle.minHeight);
+        console.log('- maxWidth:', computedStyle.maxWidth);
+        console.log('- maxHeight:', computedStyle.maxHeight);
+        console.log('- display:', computedStyle.display);
+        console.log('- position:', computedStyle.position);
+        console.log('- flex:', computedStyle.flex);
+        
+        // Check parent containers
+        const videoContainer = video.closest('.video-container') || video.parentElement;
+        if (videoContainer) {
+          console.log('Parent container dimensions:');
+          console.log('- offsetWidth:', videoContainer.offsetWidth);
+          console.log('- offsetHeight:', videoContainer.offsetHeight);
+          console.log('- className:', videoContainer.className);
+        }
+        
+        $scope.isVideoLoaded = true;
+        $scope.videoError = false;
+        
+        // Force scope update
+        if (!$scope.$$phase) {
+          $scope.$apply();
+        }
+      }
+    };
+    
+    $scope.onVideoError = function() {
+      console.log('=== onVideoError() called from HTML event ===');
+      const video = document.getElementById('webinarVideo');
+      if (video && video.error) {
+        console.error('Video error details:', {
+          code: video.error.code,
+          message: video.error.message
+        });
+      }
+      
+      $scope.videoError = true;
+      $scope.isVideoLoaded = false;
+      
+      // Force scope update
+      if (!$scope.$$phase) {
+        $scope.$apply();
+      }
+    };
+
+    $scope.onVideoEnded = function() {
+      console.log('=== onVideoEnded() called - Video has finished playing ===');
+      const video = document.getElementById('webinarVideo');
+      if (video) {
+        console.log('Video ended - duration:', video.duration, 'currentTime:', video.currentTime);
+        
+        // Check if we're in a live webinar and video has actually ended
+        if ($scope.roomState.status === 'live' && video.currentTime >= video.duration) {
+          console.log('Video has ended during live webinar - redirecting to ended page');
+          
+          // Store ended webinar info for display
+          localStorage.setItem(`ended_webinar_${$scope.webinarId}`, JSON.stringify({
+            title: $scope.webinar.title,
+            endedAt: new Date().toISOString(),
+            endReason: 'video_completed',
+            message: 'Thank you for attending! The video presentation has completed.'
+          }));
+          
+          // Show toast message
+          ToastService.info('Webinar has ended. Thank you for attending!');
+          
+          // Redirect to ended page after a short delay
+          $timeout(function() {
+            $scope.redirectToEndedPage();
+          }, 2000);
+        }
+      }
+    };
+    
+    console.log('WebinarRoomController setup complete');
+  }
+]);

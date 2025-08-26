@@ -1,0 +1,163 @@
+<!-- Host Control Panel Overlay -->
+<div class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50" ng-show="showHostControls">
+  <div class="fixed top-4 right-4 w-80 bg-white rounded-lg shadow-xl border border-slate-200">
+    <!-- Header -->
+    <div class="bg-slate-800 text-white px-4 py-3 rounded-t-lg flex justify-between items-center">
+      <h3 class="font-semibold">Host Controls</h3>
+      <button ng-click="showHostControls = false" class="text-slate-300 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Loading State -->
+    <div ng-show="isLoading" class="p-6 text-center">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+      <p class="text-slate-600 mt-2">Loading host controls...</p>
+    </div>
+    
+    <!-- Main Controls -->
+    <div ng-hide="isLoading" class="p-4 space-y-4">
+      <!-- Webinar Status -->
+      <div class="bg-slate-50 p-3 rounded-lg">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-slate-700">Status</span>
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                ng-class="{
+                  'bg-green-100 text-green-800': hostControls.isLive,
+                  'bg-yellow-100 text-yellow-800': hostControls.webinarPaused,
+                  'bg-slate-100 text-slate-800': !hostControls.webinarStarted
+                }">
+            <span ng-show="hostControls.isLive">● Live</span>
+            <span ng-show="hostControls.webinarPaused">⏸ Paused</span>
+            <span ng-show="!hostControls.webinarStarted">⏹ Not Started</span>
+          </span>
+        </div>
+        <div class="text-xs text-slate-600">
+          {{hostControls.attendeeCount}} attendees online
+        </div>
+      </div>
+      
+      <!-- Primary Controls -->
+      <div class="space-y-2">
+        <!-- Start/Pause Button -->
+        <button ng-click="toggleWebinar()" 
+                class="w-full py-2 px-4 rounded-lg font-medium transition-colors"
+                ng-class="{
+                  'bg-green-600 hover:bg-green-700 text-white': !hostControls.webinarStarted,
+                  'bg-yellow-600 hover:bg-yellow-700 text-white': hostControls.webinarStarted && !hostControls.webinarPaused,
+                  'bg-green-600 hover:bg-green-700 text-white': hostControls.webinarPaused
+                }">
+          <span ng-show="!hostControls.webinarStarted">▶ Start Webinar</span>
+          <span ng-show="hostControls.webinarStarted && !hostControls.webinarPaused">⏸ Pause</span>
+          <span ng-show="hostControls.webinarPaused">▶ Resume</span>
+        </button>
+        
+        <!-- End Webinar Button -->
+        <button ng-click="endWebinar()" 
+                ng-show="hostControls.webinarStarted"
+                class="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">
+          ⏹ End Webinar
+        </button>
+      </div>
+      
+      <!-- Feature Controls -->
+      <div class="space-y-2">
+        <div class="text-sm font-medium text-slate-700 mb-2">Features</div>
+        
+        <!-- Chat Control -->
+        <div class="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+          <span class="text-sm text-slate-700">Chat</span>
+          <button ng-click="toggleChat()" 
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  ng-class="{'bg-primary-600': hostControls.chatEnabled, 'bg-slate-300': !hostControls.chatEnabled}">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                  ng-class="{'translate-x-6': hostControls.chatEnabled, 'translate-x-1': !hostControls.chatEnabled}"></span>
+          </button>
+        </div>
+        
+        <!-- Recording Control -->
+        <div class="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+          <span class="text-sm text-slate-700 flex items-center">
+            Recording
+            <span ng-show="hostControls.recordingActive" class="ml-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+          </span>
+          <button ng-click="toggleRecording()" 
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  ng-class="{'bg-red-600': hostControls.recordingActive, 'bg-slate-300': !hostControls.recordingActive}">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                  ng-class="{'translate-x-6': hostControls.recordingActive, 'translate-x-1': !hostControls.recordingActive}"></span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Attendee Management -->
+      <div class="border-t border-slate-200 pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-medium text-slate-700">Attendees ({{attendeeList.length}})</span>
+          <button class="text-xs text-primary-600 hover:text-primary-700">View All</button>
+        </div>
+        
+        <!-- Attendee List (Top 5) -->
+        <div class="space-y-2 max-h-40 overflow-y-auto">
+          <div ng-repeat="attendee in attendeeList | limitTo:5" 
+               class="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 rounded-full"
+                   ng-class="{'bg-green-500': attendee.active, 'bg-slate-400': !attendee.active}"></div>
+              <span class="text-sm text-slate-700 truncate">{{attendee.name}}</span>
+              <span ng-show="attendee.muted" class="text-xs text-slate-500">🔇</span>
+              <span ng-show="attendee.handRaised" class="text-xs">✋</span>
+            </div>
+            
+            <div class="flex items-center space-x-1">
+              <button ng-click="muteAttendee(attendee.id)" 
+                      class="text-xs px-2 py-1 text-slate-600 hover:text-slate-800"
+                      title="{{attendee.muted ? 'Unmute' : 'Mute'}}">
+                {{attendee.muted ? '🔊' : '🔇'}}
+              </button>
+              <button ng-click="kickAttendee(attendee.id)" 
+                      class="text-xs px-2 py-1 text-red-600 hover:text-red-800"
+                      title="Remove attendee">
+                ✕
+              </button>
+            </div>
+          </div>
+          
+          <div ng-show="attendeeList.length > 5" class="text-center py-2">
+            <span class="text-xs text-slate-500">+{{attendeeList.length - 5}} more attendees</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="border-t border-slate-200 pt-4">
+        <div class="text-sm font-medium text-slate-700 mb-2">Quick Actions</div>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors">
+            📊 Poll
+          </button>
+          <button class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors">
+            ❓ Q&A
+          </button>
+          <button class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors">
+            🎯 Focus
+          </button>
+          <button class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors">
+            📱 Share
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Host Control Toggle Button (when panel is closed) -->
+<div ng-hide="showHostControls" class="fixed top-4 right-4 z-40">
+  <button ng-click="showHostControls = true" 
+          ng-show="isHost"
+          class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg shadow-lg font-medium transition-colors">
+    🎛️ Host Controls
+  </button>
+</div>

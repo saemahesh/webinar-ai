@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="webinarApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webinar.AI - Live Webinar Platform</title>
+    
+    <!-- Base URL for HTML5 mode -->
+    <base href="/">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📹</text></svg>">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e'
+                        },
+                        dark: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617'
+                        },
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617'
+                        }
+                    }
+                }
+            },
+            darkMode: 'class'
+        }
+    </script>
+    
+    <!-- AngularJS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+    <script src="https://unpkg.com/@uirouter/angularjs@1.0.30/release/angular-ui-router.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/main.css">
+    
+    <!-- Custom Styles -->
+    <style>
+        [ng\:cloak], [ng-cloak], .ng-cloak {
+            display: none !important;
+        }
+    /* Early kill-switch: hide global nav when HTML element has the class set by inline script */
+    html.hide-global-nav #global-nav { display: none !important; }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #dbeafe;
+            border-radius: 50%;
+            border-top-color: #2563eb;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .toast {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen" ng-cloak>
+    <!-- Early path check to hide header on join pages before Angular initializes -->
+    <script>
+        (function(){
+            try {
+                var p = window.location && window.location.pathname || '';
+                if (p.indexOf('/join/') === 0) {
+                    document.documentElement.classList.add('hide-global-nav');
+                }
+            } catch (e) { /* no-op */ }
+        })();
+    </script>
+    <!-- Navigation -->
+    <nav id="global-nav" class="bg-slate-900 border-b border-slate-800 shadow-lg" ng-controller="NavController" ng-if="!hideHeader">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a ui-sref="home" class="flex items-center space-x-2">
+                        <span class="text-2xl">📹</span>
+                        <span class="text-xl font-bold text-slate-200">Webinar.AI</span>
+                    </a>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center">
+                    <button ng-click="mobileMenuOpen = !mobileMenuOpen" 
+                            class="text-slate-300 hover:text-white p-2 rounded-md">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path ng-if="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            <path ng-if="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex md:items-center md:space-x-4">
+                    <!-- Guest Navigation -->
+                    <div ng-if="!isLoggedIn()" class="flex items-center space-x-4">
+                        <a ui-sref="login" class="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            Login
+                        </a>
+                        <a ui-sref="register" class="bg-primary-700 hover:bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-md">
+                            Register
+                        </a>
+                    </div>
+                    
+                    <!-- Authenticated Navigation -->
+                    <div ng-if="isLoggedIn()" class="flex items-center space-x-4">
+                        <span class="text-slate-300 text-sm">Welcome, {{currentUser.name}}</span>
+                        <button ng-if="currentUser.role === 'admin'" ui-sref="admin" 
+                                class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            Admin
+                        </button>
+                        <button ng-if="currentUser.role === 'host'" ui-sref="dashboard" 
+                                class="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            Dashboard
+                        </button>
+                        <button ng-click="logout()" 
+                                class="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile Navigation Menu -->
+            <div ng-if="mobileMenuOpen" class="md:hidden border-t border-slate-800 pt-4 pb-3">
+                <div ng-if="!isLoggedIn()" class="space-y-2">
+                    <a ui-sref="login" ng-click="mobileMenuOpen = false"
+                       class="block text-slate-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">
+                        Login
+                    </a>
+                    <a ui-sref="register" ng-click="mobileMenuOpen = false"
+                       class="block bg-primary-700 hover:bg-primary-600 text-white px-3 py-2 rounded-md text-base font-medium">
+                        Register
+                    </a>
+                </div>
+                
+                <div ng-if="isLoggedIn()" class="space-y-2">
+                    <div class="text-slate-300 px-3 py-2 text-base font-medium border-b border-slate-800 mb-2">
+                        Welcome, {{currentUser.name}}
+                    </div>
+                    <a ng-if="currentUser.role === 'admin'" ui-sref="admin" ng-click="mobileMenuOpen = false"
+                       class="block bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-md text-base font-medium">
+                        Admin
+                    </a>
+                    <a ng-if="currentUser.role === 'host'" ui-sref="dashboard" ng-click="mobileMenuOpen = false"
+                       class="block text-slate-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">
+                        Dashboard
+                    </a>
+                    <button ng-click="logout(); mobileMenuOpen = false" 
+                            class="block w-full text-left text-slate-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="min-h-screen">
+        <div ui-view></div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="fixed top-4 right-4 z-50" ng-controller="ToastController">
+        <div ng-repeat="toast in toasts" 
+             class="toast mb-3 bg-{{toast.type === 'error' ? 'red' : toast.type === 'success' ? 'green' : 'blue'}}-600 text-white px-6 py-3 rounded-lg shadow-lg max-w-sm"
+             ng-class="{'show': toast.show}">
+            <div class="flex items-center justify-between">
+                <span>{{toast.message}}</span>
+                <button ng-click="removeToast($index)" class="ml-3 text-white hover:text-gray-200">
+                    ×
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div ng-if="$root.loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-blue-900 p-6 rounded-lg shadow-xl text-center border border-blue-700">
+            <div class="loading mx-auto mb-4"></div>
+            <p class="text-blue-300">Loading...</p>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/js/app.js"></script>
+    <script src="/js/services/auth.service.js"></script>
+    <script src="/js/services/toast.service.js"></script>
+    <script src="/js/services/webinar.service.js"></script>
+    <script src="/js/directives/file-upload.directive.js"></script>
+    <script src="/js/controllers/nav.controller.js"></script>
+    <script src="/js/controllers/toast.controller.js"></script>
+    <script src="/js/controllers/home.controller.js"></script>
+    <script src="/js/controllers/login.controller.js"></script>
+    <script src="/js/controllers/register.controller.js"></script>
+    <script src="/js/controllers/admin.controller.js"></script>
+    <script src="/js/controllers/dashboard.controller.js"></script>
+    <script src="/js/controllers/webinar-details.controller.js"></script>
+    <script src="/js/controllers/join-webinar.controller.js"></script>
+    <script src="/js/controllers/webinar-room-simple.controller.js"></script>
+    <script src="/js/controllers/webinar-ended.controller.js"></script>
+    <!-- <script src="/js/controllers/host-control-panel.controller.js"></script> -->
+</body>
+</html>

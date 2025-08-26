@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<div class="webinar-ended-container">
+  <div class="ended-card">
+    <div class="ended-icon">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    
+    <h1 class="ended-title">Webinar Ended</h1>
+    <h2 class="webinar-title">{{webinar.title}}</h2>
+    
+    <div class="ended-message">
+      <p class="thank-you-text">Thank you for attending!</p>
+      <p class="details-text">The webinar "{{webinar.title}}" has concluded.</p>
+      
+      <div class="webinar-summary">
+        <div class="summary-item">
+          <i class="fas fa-calendar"></i>
+          <span>{{webinar.scheduledDate | date:'EEEE, MMMM d, yyyy'}}</span>
+        </div>
+        <div class="summary-item">
+          <i class="fas fa-clock"></i>
+          <span>{{webinar.duration}} minutes</span>
+        </div>
+        <div class="summary-item">
+          <i class="fas fa-users"></i>
+          <span>{{webinar.registrations || 0}} attendees</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="action-buttons">
+      <button class="btn btn-primary" ng-click="goToHome()">
+        <i class="fas fa-home"></i>
+        Go to Home
+      </button>
+      
+      <button class="btn btn-secondary" ng-click="browseWebinars()">
+        <i class="fas fa-calendar-alt"></i>
+        Browse More Webinars
+      </button>
+    </div>
+    
+    <div class="feedback-section">
+      <p class="feedback-text">We'd love your feedback!</p>
+      <div class="rating-buttons">
+        <button class="rating-btn" ng-click="submitRating(5)">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          Excellent
+        </button>
+        <button class="rating-btn" ng-click="submitRating(4)">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="far fa-star"></i>
+          Good
+        </button>
+        <button class="rating-btn" ng-click="submitRating(3)">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="far fa-star"></i>
+          <i class="far fa-star"></i>
+          Average
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.webinar-ended-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.ended-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ended-icon {
+  font-size: 4rem;
+  color: #4CAF50;
+  margin-bottom: 20px;
+}
+
+.ended-title {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.webinar-title {
+  font-size: 1.5rem;
+  color: #666;
+  margin-bottom: 30px;
+  font-weight: 400;
+}
+
+.thank-you-text {
+  font-size: 1.3rem;
+  color: #4CAF50;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.details-text {
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 1.1rem;
+}
+
+.webinar-summary {
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  color: #555;
+  font-size: 1rem;
+}
+
+.summary-item:last-child {
+  margin-bottom: 0;
+}
+
+.summary-item i {
+  margin-right: 10px;
+  width: 20px;
+  color: #667eea;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.btn-secondary:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.feedback-section {
+  border-top: 1px solid rgba(102, 126, 234, 0.2);
+  padding-top: 20px;
+}
+
+.feedback-text {
+  color: #666;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.rating-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.rating-btn {
+  background: rgba(255, 193, 7, 0.1);
+  border: 2px solid #ffc107;
+  border-radius: 20px;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #f57c00;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.rating-btn:hover {
+  background: #ffc107;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.rating-btn i {
+  font-size: 0.8rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .ended-card {
+    padding: 30px 20px;
+    margin: 10px;
+  }
+  
+  .ended-title {
+    font-size: 2rem;
+  }
+  
+  .webinar-title {
+    font-size: 1.3rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn {
+    width: 100%;
+    max-width: 250px;
+    justify-content: center;
+  }
+  
+  .rating-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .rating-btn {
+    width: 100%;
+    max-width: 200px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .ended-icon {
+    font-size: 3rem;
+  }
+  
+  .ended-title {
+    font-size: 1.8rem;
+  }
+  
+  .webinar-title {
+    font-size: 1.2rem;
+  }
+  
+  .summary-item {
+    font-size: 0.9rem;
+  }
+}
+</style>

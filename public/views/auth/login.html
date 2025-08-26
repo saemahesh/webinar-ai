@@ -1,0 +1,110 @@
+<!-- Login Page -->
+<div class="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <!-- Header -->
+    <div class="text-center">
+      <div class="text-5xl mb-4">📹</div>
+      <h2 class="mt-6 text-3xl font-bold text-white">
+        Sign in to your account
+      </h2>
+      <p class="mt-2 text-sm text-slate-300">
+        Or 
+        <a ui-sref="register" class="font-medium text-primary-400 hover:text-primary-300 transition-colors">
+          create a new account
+        </a>
+      </p>
+    </div>
+    
+    <!-- Login Form -->
+    <div class="bg-slate-900 p-8 rounded-xl shadow-2xl border border-slate-700">
+      <form ng-submit="login()" class="space-y-6">
+        
+        <!-- Email Field -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-slate-300 mb-2">
+            Email address
+          </label>
+          <input id="email" 
+                 name="email" 
+                 type="email" 
+                 ng-model="loginForm.email"
+                 required 
+                 class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                 placeholder="Enter your email">
+          <div ng-if="errors.email" class="mt-1 text-sm text-red-400">
+            {{errors.email}}
+          </div>
+        </div>
+        
+        <!-- Password Field -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-slate-300 mb-2">
+            Password
+          </label>
+          <input id="password" 
+                 name="password" 
+                 type="password" 
+                 ng-model="loginForm.password"
+                 required 
+                 class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                 placeholder="Enter your password">
+          <div ng-if="errors.password" class="mt-1 text-sm text-red-400">
+            {{errors.password}}
+          </div>
+        </div>
+        
+        <!-- Remember Me -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <input id="remember-me" 
+                   name="remember-me" 
+                   type="checkbox" 
+                   ng-model="loginForm.rememberMe"
+                   class="h-4 w-4 text-primary-600 bg-slate-800 border-slate-600 rounded focus:ring-primary-500">
+            <label for="remember-me" class="ml-2 block text-sm text-slate-300">
+              Remember me
+            </label>
+          </div>
+          
+          <div class="text-sm">
+            <a href="#" class="font-medium text-primary-400 hover:text-primary-300 transition-colors">
+              Forgot your password?
+            </a>
+          </div>
+        </div>
+        
+        <!-- Submit Button -->
+        <div>
+          <button type="submit" 
+                  ng-disabled="isLoading"
+                  class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <span ng-if="!isLoading">Sign in</span>
+            <span ng-if="isLoading" class="flex items-center">
+              <div class="loading mr-2"></div>
+              Signing in...
+            </span>
+          </button>
+        </div>
+        
+        <!-- Demo Credentials -->
+        <div class="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-600">
+          <h4 class="text-sm font-medium text-slate-300 mb-2">🔑 Demo Credentials:</h4>
+          <div class="space-y-1 text-xs text-slate-400">
+            <div><strong class="text-white">Admin:</strong> admin@webinar.ai / admin123</div>
+            <div><strong class="text-white">Host:</strong> Register a new account and wait for approval</div>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Footer -->
+    <div class="text-center">
+      <p class="text-sm text-slate-300">
+        Don't have an account? 
+        <a ui-sref="register" class="font-medium text-primary-400 hover:text-primary-300 transition-colors">
+          Sign up here
+        </a>
+      </p>
+    </div>
+  </div>
+</div>

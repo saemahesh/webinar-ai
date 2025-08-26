@@ -1,0 +1,147 @@
+<!-- Register Page -->
+<div class="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <!-- Header -->
+    <div class="text-center">
+      <div class="text-5xl mb-4">🚀</div>
+      <h2 class="mt-6 text-3xl font-bold text-white">
+        Create your account
+      </h2>
+      <p class="mt-2 text-sm text-slate-300">
+        Join Webinar.AI and start hosting amazing webinars
+      </p>
+    </div>
+    
+    <!-- Registration Form -->
+    <div class="bg-slate-900 p-8 rounded-xl shadow-2xl border border-slate-700">
+      <form ng-submit="register()" class="space-y-6">
+        
+        <!-- Name Field -->
+        <div>
+          <label for="name" class="block text-sm font-medium text-slate-300 mb-2">
+            Full Name
+          </label>
+          <input id="name" 
+                 name="name" 
+                 type="text" 
+                 ng-model="registerForm.name"
+                 required 
+                 class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                 placeholder="Enter your full name">
+          <div ng-if="errors.name" class="mt-1 text-sm text-red-400">
+            {{errors.name}}
+          </div>
+        </div>
+        
+        <!-- Email Field -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-slate-300 mb-2">
+            Email address
+          </label>
+          <input id="email" 
+                 name="email" 
+                 type="email" 
+                 ng-model="registerForm.email"
+                 required 
+                 class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                 placeholder="Enter your email">
+          <div ng-if="errors.email" class="mt-1 text-sm text-red-400">
+            {{errors.email}}
+          </div>
+        </div>
+        
+        <!-- Password Field -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-slate-300 mb-2">
+            Password
+          </label>
+          <input id="password" 
+                 name="password" 
+                 type="password" 
+                 ng-model="registerForm.password"
+                 required 
+                 class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                 placeholder="Enter your password">
+          <div ng-if="errors.password" class="mt-1 text-sm text-red-400">
+            {{errors.password}}
+          </div>
+          <div class="mt-1 text-xs text-slate-400">
+            Password must be at least 6 characters long
+          </div>
+        </div>
+        
+        <!-- Confirm Password Field -->
+        <div>
+          <label for="confirmPassword" class="block text-sm font-medium text-slate-300 mb-2">
+            Confirm Password
+          </label>
+          <input id="confirmPassword" 
+                 name="confirmPassword" 
+                 type="password" 
+                 ng-model="registerForm.confirmPassword"
+                 required 
+                 class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                 placeholder="Confirm your password">
+          <div ng-if="errors.confirmPassword" class="mt-1 text-sm text-red-400">
+            {{errors.confirmPassword}}
+          </div>
+        </div>
+        
+        <!-- Terms & Conditions -->
+        <div class="flex items-center">
+          <input id="terms" 
+                 name="terms" 
+                 type="checkbox" 
+                 ng-model="registerForm.acceptTerms"
+                 required
+                 class="h-4 w-4 text-primary-600 bg-slate-800 border-slate-600 rounded focus:ring-primary-500">
+          <label for="terms" class="ml-2 block text-sm text-slate-300">
+            I agree to the 
+            <a href="#" class="text-primary-400 hover:text-primary-300 transition-colors">Terms and Conditions</a>
+            and 
+            <a href="#" class="text-primary-400 hover:text-primary-300 transition-colors">Privacy Policy</a>
+          </label>
+        </div>
+        <div ng-if="errors.acceptTerms" class="text-sm text-red-400">
+          {{errors.acceptTerms}}
+        </div>
+        
+        <!-- Submit Button -->
+        <div>
+          <button type="submit" 
+                  ng-disabled="isLoading"
+                  class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <span ng-if="!isLoading">Create Account</span>
+            <span ng-if="isLoading" class="flex items-center">
+              <div class="loading mr-2"></div>
+              Creating account...
+            </span>
+          </button>
+        </div>
+        
+        <!-- Info Box -->
+        <div class="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-600">
+          <div class="flex items-start">
+            <div class="text-primary-400 text-lg mr-3">ℹ️</div>
+            <div>
+              <h4 class="text-sm font-medium text-slate-300 mb-1">Account Approval Required</h4>
+              <p class="text-xs text-slate-200">
+                After registration, your account will be pending approval. An admin will review and approve your account before you can start creating webinars.
+              </p>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Footer -->
+    <div class="text-center">
+      <p class="text-sm text-slate-300">
+        Already have an account? 
+        <a ui-sref="login" class="font-medium text-primary-400 hover:text-primary-300 transition-colors">
+          Sign in here
+        </a>
+      </p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,32 @@
+Read Mandatory instructions to follow on every iteration:
+    Read and analyze the issue-details.txt file to understand the issues.
+    Review the images in the issues directory related to the issues.
+    Provide code changes to fix the issues one by one.
+    Iterate on the code changes until the total issues count reaches 0.
+    After each iteration, re-read the issue-details.txt file for updates or feedback.
+    Do not assume issues are fixed until the total issues count is 0.
+    Clear the contents of actionplan.txt and update it with a new plan based on the current stage.
+    Do not create test scripts; you will receive manual feedback.
+    Avoid using the bg-gradient-to-br class in your code changes.
+    you should not modify the issue-details.txt file directly.
+    do not run localhost:3000 or backend server commands, i am running it and TESTING to give you feedback
+    Clear your previous iteration count to start fresh if reading this file first time
+    Iterate on the issue-details.txt file 62 times until you see no issues listed , otherwise fix issues accordingly.
+    if issues not removed, improve them
+    until i clear the issues here, consider they are not fixed
+    do not restart node server and do not open website links , i am checking manually and also server is running in nodemon
+
+
+ Do not stop for testing changes, i am testing as soon as you are 
+ making code changes, and updating feedback in this file it self.
+ iterate again on this file for issues and fix them
+ 
+ once you fixed all issues listed below, run command 'echo "fixed issues"' , after running it, read the issues.txt again and fix the issues
+--------------------------------------------------------
+**** Issue List ****
+in webinar room 
+participants count should be 0 before scheduledDate and time - fix it
+
+http://localhost:3000/webinar-room/5ab341c5-883f-4a20-ba5d-bfe884742d31 in this page 
+is someone joins before scheduledDate, showing webinar starts soon 
+but in desktop mode, keep it center inside video layout, curretnly no paading is given on top

@@ -1,0 +1,357 @@
+<!-- Host Dashboard -->
+<div class="min-h-screen bg-slate-950">
+  <!-- Host Header -->
+  <div class="bg-slate-900 border-b border-slate-700 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 sm:py-0 sm:h-16">
+        <h1 class="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-0">
+          <span class="text-slate-300">🎥</span> Host Dashboard
+        </h1>
+        <div class="text-sm text-slate-300">
+          Welcome, <span class="font-semibold text-white">{{currentUser.name}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    
+    <!-- Quick Actions -->
+    <div class="mb-8">
+      <div class="flex flex-col sm:flex-row gap-4">
+        <button ng-click="showCreateWebinarModal()" 
+                class="bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-lg flex items-center justify-center">
+          <span class="mr-2">📹</span> Create New Webinar
+        </button>
+        <button ng-click="refreshDashboard()" 
+                class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-lg flex items-center justify-center">
+          <span class="mr-2">🔄</span> Refresh
+        </button>
+      </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-700 shadow-lg">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs sm:text-sm font-medium text-slate-300">Total Webinars</p>
+            <p class="text-xl sm:text-2xl font-bold text-white">{{stats.totalWebinars}}</p>
+          </div>
+          <div class="text-primary-400 text-2xl sm:text-3xl">📊</div>
+        </div>
+      </div>
+      
+      <div class="bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-700 shadow-lg">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs sm:text-sm font-medium text-slate-300">Upcoming</p>
+            <p class="text-xl sm:text-2xl font-bold text-white">{{stats.upcomingWebinars}}</p>
+          </div>
+          <div class="text-green-400 text-2xl sm:text-3xl">🚀</div>
+        </div>
+      </div>
+      
+      <div class="bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-700 shadow-lg">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs sm:text-sm font-medium text-slate-300">Total Attendees</p>
+            <p class="text-xl sm:text-2xl font-bold text-white">{{stats.totalAttendees}}</p>
+          </div>
+          <div class="text-purple-400 text-2xl sm:text-3xl">👥</div>
+        </div>
+      </div>
+      
+      <div class="bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-700 shadow-lg">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs sm:text-sm font-medium text-slate-300">Live Now</p>
+            <p class="text-xl sm:text-2xl font-bold text-white">{{stats.liveWebinars}}</p>
+          </div>
+          <div class="text-red-400 text-2xl sm:text-3xl">🔴</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Webinars List -->
+    <div class="bg-slate-900 rounded-xl border border-slate-700 shadow-lg">
+      <div class="px-4 sm:px-6 py-4 border-b border-slate-700">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+          <h2 class="text-lg sm:text-xl font-semibold text-white mb-2 sm:mb-0">
+            <span class="text-slate-300">🎯</span> My Webinars
+          </h2>
+          <div class="flex space-x-2">
+            <select ng-model="filterStatus" ng-change="filterWebinars()" 
+                    class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500">
+              <option value="">All Status</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="live">Live</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-4 sm:p-6">
+        <!-- Loading State -->
+        <div ng-if="isLoading" class="text-center py-8">
+          <div class="loading mx-auto mb-4"></div>
+          <p class="text-slate-300">Loading webinars...</p>
+        </div>
+        
+        <!-- No Webinars -->
+        <div ng-if="!isLoading && filteredWebinars.length === 0" class="text-center py-8">
+          <div class="text-primary-400 text-4xl sm:text-6xl mb-4">📹</div>
+          <p class="text-slate-300 text-lg">No webinars found</p>
+          <p class="text-sm text-slate-400 mb-4">Start by creating your first webinar!</p>
+          <button ng-click="showCreateWebinarModal()" 
+                  class="bg-primary-600 hover:bg-primary-500 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+            Create Webinar
+          </button>
+        </div>
+        
+        <!-- Webinars Grid - Mobile Cards -->
+        <div ng-if="!isLoading && filteredWebinars.length > 0" class="block lg:hidden space-y-4">
+          <div ng-repeat="webinar in filteredWebinars" class="bg-slate-800 rounded-xl p-4 border border-slate-600 shadow-md">
+            <div class="flex justify-between items-start mb-3">
+              <div class="flex-1">
+                <h3 class="font-semibold text-white text-lg mb-2">{{webinar.title}}</h3>
+                                <p class="text-slate-300 text-sm mb-2">{{webinar.description | limitTo:100}}{{webinar.description.length > 100 ? '...' : ''}}</p>
+              </div>
+              <span ng-class="{
+                'bg-green-800 text-green-200': webinar.status === 'upcoming',
+                'bg-red-800 text-red-200': webinar.status === 'live',
+                'bg-slate-800 text-slate-200': webinar.status === 'completed',
+                'bg-yellow-800 text-yellow-200': webinar.status === 'cancelled'
+              }" class="px-3 py-1 text-xs rounded-full font-medium ml-3">
+                {{webinar.status | uppercase}}
+              </span>
+            </div>
+            
+            <div class="space-y-2 mb-4">
+              <div class="flex items-center text-slate-400 text-sm">
+                <span class="mr-2">📅</span>
+                {{webinar.scheduledDate | date:'medium'}}
+              </div>
+              <div class="flex items-center text-slate-400 text-sm">
+                <span class="mr-2">⏱️</span>
+                {{webinar.duration}} minutes
+              </div>
+              <div class="flex items-center text-slate-400 text-sm">
+                <span class="mr-2">👥</span>
+                {{webinar.registrations || 0}} registered
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 mt-3">
+              <button ng-click="viewWebinarDetails(webinar)" 
+                      class="bg-primary-600 hover:bg-primary-500 text-white text-sm py-2 px-2 rounded-lg font-medium transition-colors">
+            </div>
+            
+            <div class="space-y-2 mb-4">
+              <div class="flex items-center text-slate-400 text-sm">
+                <span class="mr-2">📅</span>
+                {{webinar.scheduledDate | date:'medium'}}
+              </div>
+              <div class="flex items-center text-slate-400 text-sm">
+                <span class="mr-2">⏱️</span>
+                {{webinar.duration}} minutes
+              </div>
+              <div class="flex items-center text-slate-400 text-sm">
+                <span class="mr-2">👥</span>
+                {{webinar.registrations || 0}} registered
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 mt-3">
+              <button ng-click="viewWebinarDetails(webinar)" 
+                      class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm py-2 px-2 rounded-lg font-medium transition-colors">
+                Details
+              </button>
+              <button ng-click="copyWebinarLink(webinar)" 
+                      class="bg-purple-600 hover:bg-purple-500 text-white text-sm py-2 px-2 rounded-lg font-medium transition-colors">
+                Copy Link
+              </button>
+              <button ng-click="editWebinar(webinar)" 
+                      class="bg-slate-600 hover:bg-slate-500 text-white text-sm py-2 px-2 rounded-lg font-medium transition-colors">
+                Edit
+              </button>
+              <button ng-click="deleteWebinar(webinar)" 
+                      class="bg-red-600 hover:bg-red-500 text-white text-sm py-2 px-2 rounded-lg font-medium transition-colors">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Webinars Table - Desktop -->
+        <div ng-if="!isLoading && filteredWebinars.length > 0" class="hidden lg:block overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b border-slate-700">
+                <th class="text-left py-3 px-4 text-slate-300 font-medium">Title</th>
+                <th class="text-left py-3 px-4 text-slate-300 font-medium">Scheduled Date</th>
+                <th class="text-left py-3 px-4 text-slate-300 font-medium">Duration</th>
+                <th class="text-left py-3 px-4 text-slate-300 font-medium">Status</th>
+                <th class="text-left py-3 px-4 text-slate-300 font-medium">Registrations</th>
+                <th class="text-left py-3 px-4 text-slate-300 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr ng-repeat="webinar in filteredWebinars" class="border-b border-slate-700 hover:bg-slate-800 transition-colors">
+                <td class="py-3 px-4">
+                  <div>
+                    <div class="text-white font-medium">{{webinar.title}}</div>
+                    <div class="text-slate-300 text-sm">{{webinar.description | limitTo:50}}{{webinar.description.length > 50 ? '...' : ''}}</div>
+                  </div>
+                </td>
+                <td class="py-3 px-4 text-slate-300 text-sm">
+                  {{webinar.scheduledDate | date:'medium'}}
+                </td>
+                <td class="py-3 px-4 text-slate-300 text-sm">
+                  {{webinar.duration}} min
+                </td>
+                <td class="py-3 px-4">
+                  <span ng-class="{
+                    'bg-green-800 text-green-200': webinar.status === 'upcoming',
+                    'bg-red-800 text-red-200': webinar.status === 'live',
+                    'bg-gray-800 text-gray-200': webinar.status === 'completed',
+                    'bg-yellow-800 text-yellow-200': webinar.status === 'cancelled'
+                  }" class="px-2 py-1 text-xs rounded-full">
+                    {{webinar.status | uppercase}}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-slate-300 text-sm">
+                  {{webinar.registrations || 0}}
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex space-x-2">
+                    <button ng-click="viewWebinarDetails(webinar)" 
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-1 px-2 rounded font-medium transition-colors">
+                      Details
+                    </button>
+                    <button ng-click="editWebinar(webinar)" 
+                            class="bg-primary-600 hover:bg-primary-500 text-white text-xs py-1 px-2 rounded font-medium transition-colors">
+                      Edit
+                    </button>
+                    <button ng-click="deleteWebinar(webinar)" 
+                            class="bg-red-600 hover:bg-red-500 text-white text-xs py-1 px-2 rounded font-medium transition-colors">
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create/Edit Webinar Modal -->
+  <div ng-if="showModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 rounded-xl p-6 max-w-2xl w-full border border-slate-700 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h3 class="text-lg font-semibold text-white mb-4">
+        <span class="text-slate-400">{{isEditing ? '✏️' : '➕'}}</span> 
+        {{isEditing ? 'Edit' : 'Create'}} Webinar
+      </h3>
+      
+      <form ng-submit="saveWebinar()" class="space-y-4">
+        <!-- Title -->
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2">Title *</label>
+          <input type="text" ng-model="webinarForm.title" required maxlength="100"
+                 class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                 placeholder="Enter webinar title">
+        </div>
+        
+        <!-- Description -->
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2">Description *</label>
+          <textarea ng-model="webinarForm.description" rows="3" required maxlength="500"
+                    class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Describe your webinar..."></textarea>
+        </div>
+        
+        <!-- Date and Time -->
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2">Scheduled Date & Time *</label>
+          <input type="datetime-local" 
+                 ng-model="webinarForm.scheduledDateTime" 
+                 required
+                 min="{{getMinDateTime()}}"
+                 class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        
+        <!-- Duration and Max Attendees -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Duration (minutes) *</label>
+            <input type="number" ng-model="webinarForm.duration" min="15" max="480" required
+                   class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="60">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Max Attendees *</label>
+            <input type="number" ng-model="webinarForm.maxAttendees" min="1" max="10000" required
+                   class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="100">
+          </div>
+        </div>
+        
+        <!-- Registration Required -->
+        <div class="flex items-center">
+          <input type="checkbox" ng-model="webinarForm.requireRegistration" 
+                 class="h-4 w-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500">
+          <label class="ml-2 block text-sm text-slate-300">
+            Require registration to join
+          </label>
+        </div>
+        
+        <!-- Buttons -->
+        <div class="flex space-x-3 pt-4">
+          <button type="submit" ng-disabled="isSaving"
+                  class="flex-1 bg-primary-600 hover:bg-primary-500 text-white py-2 px-4 rounded-lg font-medium disabled:opacity-50 transition-colors shadow-md">
+            <span ng-if="!isSaving">{{isEditing ? 'Update' : 'Create'}} Webinar</span>
+            <span ng-if="isSaving">{{isEditing ? 'Updating...' : 'Creating...'}}</span>
+          </button>
+          <button type="button" ng-click="closeModal()" 
+                  class="flex-1 bg-slate-700 hover:bg-primary-600 text-white py-2 px-4 rounded-lg font-medium transition-colors shadow-md">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div ng-if="showDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 rounded-xl p-6 w-full max-w-md mx-auto shadow-2xl border border-slate-600">
+    <div class="text-center">
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 6.5c-.77.833-.192 2.5 1.732 2.5z" />
+        </svg>
+      </div>
+      
+      <h3 class="text-lg font-medium text-white mb-2">Delete Webinar</h3>
+      <p class="text-slate-300 mb-2">Are you sure you want to delete this webinar?</p>
+      <p class="text-slate-400 font-medium text-sm mb-6">"{{webinarToDelete.title}}"</p>
+      <p class="text-red-400 text-sm mb-6">This action cannot be undone.</p>
+      
+      <div class="flex space-x-3">
+        <button type="button" ng-click="cancelDeleteWebinar()" 
+                class="flex-1 bg-slate-700 hover:bg-primary-600 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+          Cancel
+        </button>
+        <button type="button" ng-click="confirmDeleteWebinar()" 
+                class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

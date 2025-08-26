@@ -1,0 +1,237 @@
+<!-- Public Webinar Join Page -->
+<div class="min-h-screen bg-slate-900">
+  
+  <!-- Loading State -->
+  <div ng-if="isLoading" class="flex items-center justify-center py-20">
+    <div class="text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+      <p class="text-white mt-4">Loading webinar details...</p>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div ng-if="error && !isLoading" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="text-center">
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 6.5c-.77.833-.192 2.5 1.732 2.5z" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-white mb-2">Webinar Not Found</h2>
+      <p class="text-slate-300 mb-6">{{error}}</p>
+      <a href="/" class="bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+        Back to Home
+      </a>
+    </div>
+  </div>
+
+  <!-- Webinar Content -->
+  <div ng-if="webinar && !isLoading && !error" class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Compact Webinar Header (includes date and time) -->
+    <div class="bg-slate-800 rounded-xl p-6 mb-8 border border-slate-600">
+      <h1 class="text-3xl font-bold text-white mb-2">{{webinar.title}}</h1>
+      <p class="text-slate-300 mb-4">{{webinar.description}}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+        <div class="flex items-center text-slate-300">
+          <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {{formatDateTime(webinar.scheduledDate)}}
+        </div>
+        <div class="flex items-center text-slate-300">
+          <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {{webinar.duration}} minutes
+        </div>
+      </div>
+    </div>
+
+    <!-- Registration Section -->
+    <div class="max-w-xl mx-auto">
+      
+      <!-- Registration Form -->
+      <div>
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-600">
+          
+          <!-- Already Registered -->
+          <div ng-if="isRegistered" class="text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+              <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">You're Registered!</h3>
+            <p class="text-slate-300 mb-4">We'll send you a reminder before the webinar starts.</p>
+            <p class="text-sm text-slate-400 mb-6">Registered as: {{registrationEmail}}</p>
+            
+            <!-- Join Room Button or Ended Message -->
+            <div class="space-y-3">
+              <!-- Show if webinar has NOT ended (30 min video cutoff) -->
+              <div ng-if="!isWebinarEnded() && webinar.status !== 'completed'">
+                <button ng-click="joinWebinarRoom()" 
+                        class="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                        ng-disabled="isJoining">
+                  <i class="fas fa-video"></i>
+                  <span ng-if="!isJoining">Join Webinar Room</span>
+                  <span ng-if="isJoining">Joining...</span>
+                </button>
+                
+                <p class="text-xs text-slate-400">
+                  Click to enter the webinar room. You can join early to test your connection.
+                </p>
+              </div>
+              
+              <!-- Show if webinar has ended -->
+              <div ng-if="isWebinarEnded() || webinar.status === 'completed'" class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
+                  <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-2">Webinar Has Ended</h4>
+                <p class="text-slate-300 mb-4">This webinar has concluded. Thank you for your interest!</p>
+                <button onclick="window.location.href='/'" 
+                        class="w-full bg-slate-600 hover:bg-slate-500 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                  Back to Home
+                </button>
+              </div>
+              
+              <!-- Debug info (hidden in production) -->
+              <div class="text-xs text-slate-500 mt-2" ng-if="false">
+                <p>Debug: isRegistered = {{isRegistered}}</p>
+                <p>Debug: registrationData = {{registrationData | json}}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Registration Form -->
+          <div ng-if="!isRegistered">
+            <h3 class="text-xl font-bold text-white mb-4">Register for this Webinar</h3>
+            
+            <form ng-submit="registerForWebinar()" name="registrationForm" novalidate>
+              <div class="space-y-4">
+                
+                <div>
+                  <label class="block text-sm font-medium text-slate-300 mb-2">Full Name *</label>
+                  <input type="text" name="fullName" ng-model="registrationData.name" required
+                         class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                         placeholder="Enter your full name">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-slate-300 mb-2">Email Address *</label>
+                  <input type="email" name="email" ng-model="registrationData.email" required
+                         class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                         placeholder="Enter your email address">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-slate-300 mb-2">Company/Organization (Optional)</label>
+                  <input type="text" name="company" ng-model="registrationData.company"
+                         class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                         placeholder="Enter your company name">
+                </div>
+                
+                <!-- Custom Fields -->
+                <div ng-repeat="field in webinar.customFields" class="mb-4" ng-if="webinar.customFields && webinar.customFields.length > 0">
+                  <label class="block text-sm font-medium text-slate-300 mb-2">
+                    {{field.label}} <span ng-if="field.required" class="text-red-400">*</span>
+                  </label>
+                    
+                    <!-- Text Input -->
+          <input ng-if="field.type === 'text'" 
+            type="text"
+            name="cf_{{$index}}"
+                           ng-model="registrationData.customFields[field.label]"
+                           ng-required="field.required"
+                           class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                           placeholder="{{field.placeholder || 'Enter ' + field.label}}">
+                    
+                    <!-- Email Input -->
+          <input ng-if="field.type === 'email'" 
+            type="email"
+            name="cf_{{$index}}"
+                           ng-model="registrationData.customFields[field.label]"
+                           ng-required="field.required"
+                           class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                           placeholder="{{field.placeholder || 'Enter ' + field.label}}">
+                    
+                    <!-- Number Input -->
+          <input ng-if="field.type === 'number'" 
+            type="number"
+            name="cf_{{$index}}"
+                           ng-model="registrationData.customFields[field.label]"
+                           ng-required="field.required"
+                           class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                           placeholder="{{field.placeholder || 'Enter ' + field.label}}">
+                    
+          <!-- Phone Input -->
+          <input ng-if="field.type === 'phone'" 
+            type="tel"
+            inputmode="tel"
+            name="cf_{{$index}}"
+            ng-pattern="/^[- +()0-9]{10,20}$/"
+            ng-minlength="10"
+            ng-maxlength="20"
+            ng-model="registrationData.customFields[field.label]"
+            ng-required="field.required"
+            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            placeholder="{{field.placeholder || 'Enter ' + field.label}}">
+                    
+                    <!-- Textarea -->
+                    <textarea ng-if="field.type === 'textarea'" 
+                              name="cf_{{$index}}"
+                              ng-model="registrationData.customFields[field.label]"
+                              ng-required="field.required"
+                              rows="3"
+                              class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              placeholder="{{field.placeholder || 'Enter ' + field.label}}"></textarea>
+                    
+                    <!-- Select Dropdown -->
+        <select ng-if="field.type === 'select'" 
+          name="cf_{{$index}}"
+                            ng-model="registrationData.customFields[field.label]"
+                            ng-required="field.required"
+                            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                      <option value="">Select {{field.label}}</option>
+                      <option ng-repeat="option in field.options" value="{{option}}">{{option}}</option>
+                    </select>
+                    
+                    <!-- Checkbox Group -->
+                    <div ng-if="field.type === 'checkbox'">
+                      <div class="text-slate-300 text-sm mb-1">Select one or more:</div>
+                      <div class="space-y-2">
+                        <label class="flex items-center" ng-repeat="option in field.options">
+                          <input type="checkbox"
+                                 class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-600 rounded"
+                                 ng-checked="(registrationData.customFields[field.label] || []).indexOf(option) !== -1"
+                                 ng-click="toggleCheckbox(field.label, option)">
+                          <span class="ml-2 text-sm text-slate-300">{{option}}</span>
+                        </label>
+                      </div>
+                    </div>
+                </div>
+                
+                <div class="pt-4">
+                  <button type="submit" ng-disabled="registrationForm.$invalid || isRegistering"
+                          class="w-full bg-primary-600 hover:bg-primary-500 text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 transition-colors">
+                    <span ng-if="!isRegistering">Register for Webinar</span>
+                    <span ng-if="isRegistering">Registering...</span>
+                  </button>
+                </div>
+                
+              </div>
+            </form>
+          </div>
+          
+        </div>
+      </div>
+
+  <!-- Removed Webinar Details sidebar as requested -->
+      
+    </div>
+  </div>
+
+</div>

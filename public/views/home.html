@@ -1,0 +1,158 @@
+<!-- Home Page -->
+<div class="bg-slate-950 text-white">
+  
+  <!-- Hero Section -->
+  <section class="relative py-20 lg:py-32">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center">
+        <!-- Hero Content -->
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
+          <span class="text-white">{{title}}</span>
+        </h1>
+        <p class="text-xl sm:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto">
+          {{subtitle}}
+        </p>
+        
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+          <!-- For logged in users -->
+          <div ng-if="isLoggedIn()">
+            <button ng-click="goToDashboard()" 
+                    class="bg-primary-600 hover:bg-primary-500 text-white px-8 py-3 rounded-lg font-semibold text-lg transition duration-200 shadow-lg">
+              Go to Dashboard
+            </button>
+          </div>
+          
+          <!-- For guests -->
+          <div ng-if="!isLoggedIn()" class="flex flex-col sm:flex-row gap-4">
+            <a ui-sref="register" 
+               class="bg-primary-600 hover:bg-primary-500 text-white px-8 py-3 rounded-lg font-semibold text-lg transition duration-200 shadow-lg">
+              Start Free Trial
+            </a>
+            <a ui-sref="login" 
+               class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-lg font-semibold text-lg transition duration-200 shadow-lg">
+              Login
+            </a>
+          </div>
+        </div>
+        
+        <!-- Join Webinar Section -->
+        <div class="max-w-md mx-auto">
+          <div class="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
+            <h3 class="text-lg font-semibold mb-4 text-slate-300">Join a Webinar</h3>
+            <form ng-submit="joinWebinar()" class="space-y-4">
+              <input type="text" 
+                     ng-model="joinForm.joinLink"
+                     placeholder="Enter webinar link or ID"
+                     class="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+              <button type="submit" 
+                      class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-semibold transition duration-200 shadow-md">
+                Join Webinar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Background decoration -->
+    <div class="absolute inset-0 bg-gradient-to-br from-primary-900/20 to-purple-900/20 pointer-events-none"></div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-20 bg-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4">Why Choose Webinar.AI?</h2>
+        <p class="text-xl text-slate-300 max-w-2xl mx-auto">
+          Everything you need to create, host, and manage successful webinars
+        </p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div ng-repeat="feature in features" 
+             class="bg-slate-700 p-6 rounded-lg hover:bg-slate-600 transition duration-200">
+          <div class="text-4xl mb-4">{{feature.icon}}</div>
+          <h3 class="text-xl font-semibold mb-2">{{feature.title}}</h3>
+          <p class="text-slate-300">{{feature.description}}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="py-20 bg-primary-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        <div ng-repeat="stat in stats" class="text-center">
+          <div class="text-4xl lg:text-5xl font-bold text-white mb-2">{{stat.number}}</div>
+          <div class="text-primary-200">{{stat.label}}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-20 bg-slate-900">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-3xl sm:text-4xl font-bold mb-4">Ready to Get Started?</h2>
+      <p class="text-xl text-slate-300 mb-8">
+        Join thousands of professionals who trust Webinar.AI for their online events
+      </p>
+      
+      <div ng-if="!isLoggedIn()" class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a ui-sref="register" 
+           class="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition duration-200">
+          Create Free Account
+        </a>
+        <a href="#features" 
+           class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-lg font-semibold text-lg transition duration-200">
+          Learn More
+        </a>
+      </div>
+      
+      <div ng-if="isLoggedIn()" class="text-slate-300">
+        Welcome back, {{currentUser.name}}! Ready to create your next webinar?
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-slate-800 border-t border-slate-700 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div class="col-span-1 md:col-span-2">
+          <div class="flex items-center space-x-2 mb-4">
+            <span class="text-2xl">📹</span>
+            <span class="text-xl font-bold text-primary-400">Webinar.AI</span>
+          </div>
+          <p class="text-slate-300 mb-4">
+            The most powerful and easy-to-use webinar platform for modern businesses.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-white font-semibold mb-4">Platform</h3>
+          <ul class="space-y-2 text-slate-300">
+            <li><a href="#" class="hover:text-white transition duration-200">Features</a></li>
+            <li><a href="#" class="hover:text-white transition duration-200">Pricing</a></li>
+            <li><a href="#" class="hover:text-white transition duration-200">Support</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-white font-semibold mb-4">Company</h3>
+          <ul class="space-y-2 text-slate-300">
+            <li><a href="#" class="hover:text-white transition duration-200">About</a></li>
+            <li><a href="#" class="hover:text-white transition duration-200">Contact</a></li>
+            <li><a href="#" class="hover:text-white transition duration-200">Privacy</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-slate-700 mt-8 pt-8 text-center text-slate-400">
+        <p>&copy; 2025 Webinar.AI. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</div>

@@ -1,0 +1,38 @@
+Iteration Reset: 0
+
+Focus: Fix custom fields issues
+Additional fixes this iteration
+- Replace browser confirm when removing custom fields with non-blocking toast
+- Gate webinar-room video: render/play only when status === 'live' to prevent pre-start playback
+- Add popup modal confirmation before removing a custom field (host view)
+- Show time remaining countdown (days:hours:minutes:seconds) in webinar room while waiting
+- 1) Removed custom field still shows historical columns for attendees with data
+- 2) Phone number type input renders on join form
+- 3) Newly added custom fields appear immediately without page refresh
+ - 4) Phone validation: require 10-20 digits and acceptable symbols; enforce AngularJS validation
+ - 5) Persist computed webinar status so it isn't always 'upcoming' after time passes
+
+Steps this iteration
+1) Compute union of configured labels and historical attendee customFields labels for attendees table columns
+2) Update attendees table to render with computed labels
+3) Add phone (tel) input rendering in join form
+4) Normalize saveFormSettings response handling and recompute columns after save
+
+Changes applied
+- webinar-details.controller.js: add customFieldColumns, computeCustomFieldColumns, recompute on data changes
+- webinar-details.html: render table headers/cells using customFieldColumns
+- join-webinar.html: add type="tel" for field.type === 'phone'
+- webinar-details.controller.js: fix response handling in saveFormSettings
+ - join-webinar.html: add form and custom field input names; phone ng-pattern/min/max lengths
+ - join-webinar.controller.js: init checkbox arrays, toggle helper, normalize checkbox values on submit
+ - server routes: compute and persist dynamic status in /api/webinars and /api/webinars/:id (host) and /api/public/webinars/:id
+
+Verification (manual)
+- Remove a custom field; attendee table still shows that column for past attendees
+- Add a new custom field; it appears immediately in builder and in attendees columns
+- Phone field appears on join page with tel input
+ - Removing a custom field prompts a modal confirmation; confirm removes and saves, cancel does nothing
+ - Waiting room shows a live countdown including days/hours/minutes/seconds
+
+Tracker
+- Last issues.txt read: 4
