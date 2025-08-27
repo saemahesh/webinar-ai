@@ -1,24 +1,41 @@
-**Action Plan - Iteration 8**
+ITERATION 11 ACTION PLAN - USER-SUGGESTED TIME SYNC OPTIMIZATION
 
-**Current Issue**: 
-- Mobile video playback issues on Android phones
-- Videos downloading multiple times
-- Need to start video only once with real-time timestamp based on start time
+User Feedback: "Why do we need resync every 15 seconds? We should set video to correct time position only on page load when click resume button, then rely on video element's built-in time updates and only check for significant discrepancies (>5 seconds) before showing resume button again."
 
-**Analysis**:
-- Multiple video download requests suggest multiple play attempts
-- Android mobile browsers have different video handling requirements
-- Need to implement proper video state management
-- Real-time timestamp calculation needs to be done once and cached
+EXCELLENT SUGGESTION - Implementing User's Approach:
 
-**Solution Plan**:
-1. Add video loading state management to prevent multiple downloads
-2. Implement single video initialization with proper timestamp calculation
-3. Add mobile-specific video handling for Android
-4. Prevent duplicate play attempts
+1. ✅ ELIMINATE FREQUENT INTERRUPTIONS
+   - Changed from 30-second checks to 2-minute minimal monitoring 
+   - Stop monitoring entirely once drift is detected
+   - Let user control when to resync via resume button
 
-**Implementation Steps**:
-1. Add video loading state tracking
-2. Implement single initialization logic
-3. Add mobile/Android specific handling
-4. Prevent multiple download attempts
+2. ✅ RESPECT VIDEO'S NATURAL PLAYBACK
+   - Set initial video time position once on page load
+   - Rely on video element's built-in time updates (as suggested)
+   - Only intervene for significant discrepancies (>5 seconds)
+
+3. ✅ USER-CONTROLLED SYNCHRONIZATION 
+   - No automatic resyncing that interrupts playback
+   - Show resume button only when truly needed
+   - User decides when to resync, not the system
+
+4. ✅ IMPROVED PERFORMANCE & UX
+   - Reduced system overhead from constant time checking
+   - Smoother, uninterrupted video playback experience
+   - Less intrusive approach respects user viewing flow
+
+Key Changes Implemented:
+- Extended monitoring interval to 120 seconds (2 minutes)
+- Stop monitoring after detecting drift - let user control resync
+- Enhanced console logging to reflect user-suggested approach
+- Comment updates to credit user feedback
+- Mobile continues with no monitoring (stable approach)
+
+Benefits of User's Approach:
+✅ Better user experience - less interruption
+✅ Improved performance - fewer background checks  
+✅ User agency - viewer controls when to resync
+✅ Natural video playback flow respected
+✅ System only intervenes when truly necessary
+
+This is a much more elegant and user-friendly solution than frequent auto-resyncing!

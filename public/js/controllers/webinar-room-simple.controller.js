@@ -577,6 +577,8 @@ angular.module('webinarApp')
           $scope.isVideoLoaded = true;
           $scope.videoError = false;
           
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          
           // Set video to correct time position for live simulation
           $timeout(function() {
             const currentTime = $scope.calculateLiveVideoTime();
@@ -585,16 +587,25 @@ angular.module('webinarApp')
               console.log('Video loaded - setting initial time to:', currentTime, 'seconds');
             }
             
-            // Start time synchronization for live webinars
-            console.log('Starting time synchronization...');
-            $scope.startTimeSynchronization();
-            
-            // Check if resume button should be shown (for refresh cases)
-            $timeout(function() {
-              console.log('Checking for resume state...');
-              $scope.checkForResumeState();
-            }, 1000);
-          }, 500);
+            if (isMobile) {
+              console.log('📱 Mobile device detected - using simplified video handling');
+              // For mobile, just show resume button and skip complex synchronization
+              $timeout(function() {
+                console.log('📱 Mobile: Checking for resume state...');
+                $scope.checkForResumeState();
+              }, 1000);
+            } else {
+              // Start time synchronization for live webinars (desktop only)
+              console.log('🖥️ Desktop: Starting time synchronization...');
+              $scope.startTimeSynchronization();
+              
+              // Check if resume button should be shown (for refresh cases)
+              $timeout(function() {
+                console.log('🖥️ Desktop: Checking for resume state...');
+                $scope.checkForResumeState();
+              }, 1000);
+            }
+          }, isMobile ? 100 : 500); // Faster initialization for mobile
           
         } else if (video.error) {
           console.error('❌ Video loading error:', video.error);
@@ -661,80 +672,124 @@ angular.module('webinarApp')
       const isAndroid = /Android/i.test(navigator.userAgent);
       
       if (isMobile) {
-        console.log('📱 Mobile device detected, applying mobile optimizations');
+        console.log('📱 Mobile device detected, applying mobile-first optimizations');
         
-        // For mobile, especially Android, ensure proper attributes
+        // Mobile-first approach: Set essential attributes
         video.playsInline = true;
-        video.preload = 'metadata';
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
+        video.preload = 'auto'; // Changed to auto for better mobile loading
+        video.muted = true; // Start muted for autoplay compliance
         
         if (isAndroid) {
-          console.log('🤖 Android device detected, applying Android-specific fixes');
-          // Android-specific handling
-          video.controls = false; // Ensure no native controls interfere
+          console.log('🤖 Android device: Applying Android-specific optimizations');
+          video.controls = false;
+          // Force reload on Android to prevent stale video state
+          if (video.readyState === 0) {
+            console.log('🔄 Android: Forcing video reload due to readyState 0');
+            video.load();
+          }
         }
       }
       
-      // Calculate and set video time only once when starting
+      // Calculate and set video time - simplified for mobile
       if (!$scope.videoState.hasStarted) {
-        const currentTime = $scope.calculateLiveVideoTime();
-        if (currentTime !== null && currentTime > 0) {
-          console.log('⏰ Setting video start time to:', currentTime, 'seconds');
-          video.currentTime = currentTime;
-          $scope.videoState.calculatedStartTime = currentTime;
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+          // Mobile: Simple approach - just set to calculated time without complex logic
+          const currentTime = $scope.calculateLiveVideoTime();
+          if (currentTime > 0) {
+            video.currentTime = currentTime;
+            console.log('📱 Mobile: Set video time to', currentTime, 'seconds (simplified)');
+          }
+        } else {
+          // Desktop: Use existing logic
+          const currentTime = $scope.calculateLiveVideoTime();
+          if (currentTime !== null && currentTime > 0) {
+            console.log('🖥️ Desktop: Setting video start time to:', currentTime, 'seconds');
+            video.currentTime = currentTime;
+            $scope.videoState.calculatedStartTime = currentTime;
+          }
         }
         $scope.videoState.hasStarted = true;
       }
       
-      // For mobile, start muted to avoid autoplay restrictions, then unmute
-      if (isMobile) {
-        video.muted = true;
-        console.log('🔇 Starting muted for mobile autoplay compliance');
-      } else {
-        video.muted = false;
-        console.log('🔊 Video unmuted for audio playback (desktop)');
-      }
+      // Start video playback with mobile-optimized approach
+      const playPromise = video.play();
       
-      video.play().then(function() {
-        console.log('✅ Video play() succeeded');
-        
-        // Unmute after successful play on mobile
-        if (isMobile) {
-          setTimeout(function() {
-            video.muted = false;
-            console.log('🔊 Video unmuted after successful mobile play');
-          }, 100);
-        }
-        
-        console.log('- paused after play:', video.paused);
-        console.log('- muted:', video.muted);
-        console.log('- volume:', video.volume);
-        
-        // Hide resume button since video is playing
-        $scope.showResumeButton = false;
-        if (!$scope.$$phase) {
-          $scope.$apply();
-        }
-        
-      }).catch(function(error) {
-        console.error('❌ Error playing video:', error);
-        console.log('Error details:', {
-          name: error.name,
-          message: error.message,
-          code: error.code
+      if (playPromise !== undefined) {
+        playPromise.then(function() {
+          console.log('✅ Video play() succeeded');
+          
+          // Mobile-specific post-play handling
+          if (isMobile) {
+            console.log('📱 Mobile: Video started successfully');
+            // Gradual unmute for mobile after successful play
+            setTimeout(function() {
+              video.muted = false;
+              console.log('🔊 Mobile: Video unmuted after successful play');
+            }, 200);
+          } else {
+            console.log('🖥️ Desktop: Video started successfully');
+          }
+          
+          console.log('- paused after play:', video.paused);
+          console.log('- muted:', video.muted);
+          console.log('- volume:', video.volume);
+          
+          // Hide resume button since video is playing
+          $scope.showResumeButton = false;
+          if (!$scope.$$phase) {
+            $scope.$apply();
+          }
+          
+        }).catch(function(error) {
+          console.error('❌ Error playing video:', error);
+          console.log('Error details:', {
+            name: error.name,
+            message: error.message,
+            code: error.code
+          });
+          
+          if (isMobile) {
+            console.log('📱 Mobile play failed, trying recovery approach...');
+            // Mobile recovery: Try with different settings
+            setTimeout(function() {
+              video.muted = true;
+              video.load();
+              setTimeout(function() {
+                video.play().catch(function(retryError) {
+                  console.error('❌ Mobile video recovery also failed:', retryError);
+                });
+              }, 500);
+            }, 1000);
+          }
+          
+          // Show resume button on play failure
+          $scope.showResumeButton = true;
+          if (!$scope.$$phase) {
+            $scope.$apply();
+          }
         });
-        
-        // Show resume button on play failure
-        $scope.showResumeButton = true;
-        if (!$scope.$$phase) {
-          $scope.$apply();
-        }
-      });
+      } else {
+        // Fallback for older browsers
+        console.log('⚠️ Video.play() does not return a promise, using fallback');
+      }
     };
     
     // Calculate what time the video should be at based on webinar start time
     $scope.calculateLiveVideoTime = function() {
       if (!$scope.webinar || !$scope.webinar.scheduledDate) {
         return null;
+      }
+      
+      // For mobile devices, use cached calculation to avoid repeated calculations
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile && $scope.videoState.calculatedStartTime !== null) {
+        console.log('📱 Using cached start time for mobile:', $scope.videoState.calculatedStartTime);
+        return $scope.videoState.calculatedStartTime;
       }
       
       const now = new Date();
@@ -752,31 +807,61 @@ angular.module('webinarApp')
       console.log('Current time:', now);
       console.log('Elapsed seconds since start:', elapsedSeconds);
       
+      // Cache the result for mobile devices to avoid recalculation
+      if (isMobile) {
+        $scope.videoState.calculatedStartTime = elapsedSeconds;
+        console.log('📱 Cached start time for mobile:', elapsedSeconds);
+      }
+      
       return elapsedSeconds;
     };
     
-    // Start time synchronization for live simulation
+    // Start time synchronization for live simulation (disabled on mobile for stability)
     $scope.startTimeSynchronization = function() {
+      // Detect mobile devices
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        console.log('📱 Mobile detected: Skipping time synchronization completely for stable playback');
+        // For mobile, only set initial time and rely on natural video playback
+        const video = document.getElementById('webinarVideo');
+        if (video && $scope.roomState.status === 'live') {
+          const initialTime = $scope.calculateLiveVideoTime();
+          if (initialTime > 0) {
+            video.currentTime = initialTime;
+            console.log('📱 Mobile: Set initial video time to', initialTime, 'seconds');
+          }
+        }
+        return;
+      }
+      
+      // Desktop: User-suggested minimal monitoring approach (no frequent interruptions)
       if ($scope.roomState.status === 'live' && $scope.webinar.videoPath) {
+        console.log('�️ Desktop: Starting time synchronization');
         const syncInterval = setInterval(function() {
           const video = document.getElementById('webinarVideo');
-          if (video && !video.paused) {
+          if (video && !video.paused && video.readyState >= 2) {
             const expectedTime = $scope.calculateLiveVideoTime();
             const currentVideoTime = video.currentTime;
             const timeDifference = Math.abs(expectedTime - currentVideoTime);
             
-            // If video is more than 3 seconds off, resync
-            if (timeDifference > 3) {
-              console.log('Resyncing video time. Expected:', expectedTime, 'Current:', currentVideoTime);
-              video.currentTime = expectedTime;
+            // Only show resume button for major drift (>5 seconds), don't auto-resync
+            if (timeDifference > 5) {
+              console.log('�️ Desktop: Major time drift detected:', timeDifference, 'seconds. Showing resume button.');
+              $scope.showResumeButton = true;
+              $scope.$apply();
+              // Stop monitoring once drift detected - user controls resync timing
+              clearInterval(syncInterval);
+              console.log('Monitoring stopped - user controls resync via resume button (per user feedback)');
             }
           }
           
           // Stop syncing if webinar is no longer live
           if ($scope.roomState.status !== 'live') {
+            console.log('🛑 Stopping time synchronization - webinar no longer live');
             clearInterval(syncInterval);
           }
-        }, 10000); // Check every 10 seconds
+        }, 120000); // Check only every 2 minutes - minimal interference per user suggestion
         
         // Clear interval when leaving the page
         window.addEventListener('beforeunload', function() {
