@@ -253,5 +253,28 @@
     "registeredAt": "2025-08-26T16:31:58.794Z",
     "status": "registered",
     "customFields": {}
+  },
+  {
+    "id": "b1c16fdb-c447-405c-b38d-07f64e2a4e5d",
+    "webinarId": "5ab341c5-883f-4a20-ba5d-bfe884742d31",
+    "name": "kjnfkjn",
+    "email": "ksjgnkjdn@gsd.gss",
+    "company": "kjjnjk",
+    "registeredAt": "2025-08-26T16:53:27.558Z",
+    "status": "registered",
+    "customFields": {}
+  },
+  {
+    "id": "b52be85b-12d3-490e-a8d5-1ecc674dc7ed",
+    "webinarId": "5ab341c5-883f-4a20-ba5d-bfe884742d31",
+    "name": "kiran",
+    "email": "ksjfndj@fes.gs",
+    "company": "skjgnjk",
+    "registeredAt": "2025-08-26T17:04:51.896Z",
+    "status": "registered",
+    "customFields": {
+      "Whatsapp Number": "98798789689",
+      "1756227867372": "98798789689"
+    }
   }
 ]
