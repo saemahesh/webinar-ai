@@ -54,27 +54,27 @@ angular.module('webinarApp', ['ui.router'])
       // Home page
       .state('home', {
         url: '/',
-        templateUrl: '/views/home.html',
+        templateUrl: '/views/home.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'HomeController'
       })
       
       // Authentication routes
       .state('login', {
         url: '/login',
-        templateUrl: '/views/auth/login.html',
+        templateUrl: '/views/auth/login.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'LoginController'
       })
       
       .state('register', {
         url: '/register',
-        templateUrl: '/views/auth/register.html',
+        templateUrl: '/views/auth/register.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'RegisterController'
       })
       
       // Admin routes
       .state('admin', {
         url: '/admin',
-        templateUrl: '/views/admin/dashboard.html',
+        templateUrl: '/views/admin/dashboard.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'AdminController',
         resolve: {
           auth: ['AuthService', function(AuthService) {
@@ -88,7 +88,7 @@ angular.module('webinarApp', ['ui.router'])
       // Host routes
       .state('dashboard', {
         url: '/dashboard',
-        templateUrl: '/views/host/dashboard.html',
+        templateUrl: '/views/host/dashboard.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'DashboardController',
         resolve: {
           auth: ['AuthService', function(AuthService) {
@@ -100,7 +100,7 @@ angular.module('webinarApp', ['ui.router'])
       // Webinar details page for hosts
       .state('webinarDetails', {
         url: '/webinars/:webinarId',
-        templateUrl: '/views/host/webinar-details.html',
+        templateUrl: '/views/host/webinar-details.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'WebinarDetailsController',
         resolve: {
           auth: ['AuthService', function(AuthService) {
@@ -112,28 +112,28 @@ angular.module('webinarApp', ['ui.router'])
       // Public webinar join page
       .state('joinWebinar', {
         url: '/join/:webinarId',
-        templateUrl: '/views/public/join-webinar.html',
+        templateUrl: '/views/public/join-webinar.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'JoinWebinarController'
       })
       
       // Webinar room for attendees
       .state('webinarRoom', {
         url: '/webinar-room/:webinarId',
-        templateUrl: '/views/webinar-room.html',
+        templateUrl: '/views/webinar-room.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'WebinarRoomController'
       })
       
       // Webinar ended page
       .state('webinar-ended', {
         url: '/webinar-ended/:webinarId',
-        templateUrl: '/views/webinar-ended.html',
+        templateUrl: '/views/webinar-ended.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'WebinarEndedController'
       })
       
       // Alternative join route (used by room controller redirects)
       .state('join', {
         url: '/register/:webinarId',
-        templateUrl: '/views/public/join-webinar.html',
+        templateUrl: '/views/public/join-webinar.html?v=' + (window.__APP_VERSION || Date.now()),
         controller: 'JoinWebinarController'
       });
   }

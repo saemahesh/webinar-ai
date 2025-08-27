@@ -24,5 +24,5 @@ Read Mandatory instructions to follow on every iteration:
  once you fixed all issues listed below, run command 'echo "done fixing issues"' , after running it, read the issues.txt again and fix the issues
 --------------------------------------------------------
 **** Issue List ****
-in webinar room control panel in mobile mode is not responsive,
-icons are big, fix it , need improvement
+use the same timestamp for cache busting in HTML files with node scripts
+for html also

@@ -8,4 +8,4 @@ Changes this iteration:
 	- At <=640px: decreased padding, gap, and button sizes; tuned live/participant badges
 	- At <=480px: ensured compact controls remain readable
 
-Next: Re-read issues.txt for updated feedback; if icons still feel large or overlap, further reduce sizes or stack layout.
+Next: Re-read issues.txt for updated feedback; verify HTML updates reflect due to template cache busting and no inline styles remain.

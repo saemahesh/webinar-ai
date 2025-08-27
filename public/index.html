@@ -70,9 +70,10 @@
     
     <!-- Local Resources with Cache Busting -->
     <script>
-        // Load only local CSS and JS with cache busting
-        const timestamp = Date.now();
-        console.log('Loading resources with timestamp:', timestamp);
+        // Load a single version file first so one timestamp is reused everywhere
+        function startLoadingWithVersion() {
+            const timestamp = window.__APP_VERSION || Date.now();
+            console.log('Loading resources with timestamp:', timestamp);
         
         // Load main CSS with cache busting
         const cssLink = document.createElement('link');
@@ -82,7 +83,7 @@
         cssLink.onload = function() {
             console.log('✅ CSS loaded with cache busting: main.css');
         };
-        document.head.appendChild(cssLink);
+    document.head.appendChild(cssLink);
         
         // Function to load all local JS files with cache busting
         function loadLocalScripts() {
@@ -162,7 +163,16 @@
         window.addEventListener('unhandledrejection', function(e) {
             console.error('Unhandled promise rejection:', e.reason);
         });
-    </script>
+                }
+                // Load version.js with a cache-bypass, then start
+                (function(){
+                    var s = document.createElement('script');
+                    s.src = '/js/version.js?_=' + Date.now();
+                    s.onload = startLoadingWithVersion;
+                    s.onerror = startLoadingWithVersion; // fallback if version.js missing
+                    document.head.appendChild(s);
+                })();
+        </script>
     
     <!-- Custom Styles moved to main.css -->
 </head>
@@ -293,22 +303,22 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="/js/app.js?v=1756313082523"></script>
-    <script src="/js/services/auth.service.js?v=1756313082523"></script>
-    <script src="/js/services/toast.service.js?v=1756313082523"></script>
-    <script src="/js/services/webinar.service.js?v=1756313082523"></script>
-    <script src="/js/directives/file-upload.directive.js?v=1756313082523"></script>
-    <script src="/js/controllers/nav.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/toast.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/home.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/login.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/register.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/admin.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/dashboard.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/webinar-details.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/join-webinar.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/webinar-room-simple.controller.js?v=1756313082523"></script>
-    <script src="/js/controllers/webinar-ended.controller.js?v=1756313082523"></script>
-    <!-- <script src="/js/controllers/host-control-panel.controller.js?v=1756313082523"></script> -->
+    <script src="/js/app.js?v=1756313091936"></script>
+    <script src="/js/services/auth.service.js?v=1756313091936"></script>
+    <script src="/js/services/toast.service.js?v=1756313091936"></script>
+    <script src="/js/services/webinar.service.js?v=1756313091936"></script>
+    <script src="/js/directives/file-upload.directive.js?v=1756313091936"></script>
+    <script src="/js/controllers/nav.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/toast.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/home.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/login.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/register.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/admin.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/dashboard.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/webinar-details.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/join-webinar.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/webinar-room-simple.controller.js?v=1756313091936"></script>
+    <script src="/js/controllers/webinar-ended.controller.js?v=1756313091936"></script>
+    <!-- <script src="/js/controllers/host-control-panel.controller.js?v=1756313091936"></script> -->
 </body>
 </html>
