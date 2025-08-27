@@ -42,6 +42,65 @@ angular.module('webinarApp')
     // Chat visibility control
     $scope.chatHidden = false;
     
+    // Auto-hide chat on mobile landscape
+    (function setupMobileLandscapeAutoHide() {
+      try {
+        var mql = window.matchMedia('(max-width: 768px) and (orientation: landscape)');
+        var lastLandscape = null; // tri-state: null (unknown), true (landscape), false (portrait)
+
+        function applyAutoHide(initial) {
+          var isLandscape = false;
+          try { isLandscape = mql.matches; } catch(_) { /* no-op */ }
+
+          // Only act when orientation state changes or on first run
+          if (lastLandscape === isLandscape && !initial) return;
+          lastLandscape = isLandscape;
+
+          if (isLandscape) {
+            // In mobile landscape, default to hiding the chat for video focus
+            $scope.chatHidden = true;
+          } else {
+            // Back to portrait: default to showing chat
+            $scope.chatHidden = false;
+          }
+
+          if (!$scope.$$phase) {
+            $scope.$applyAsync();
+          }
+        }
+
+        // Initial application
+        applyAutoHide(true);
+
+        // Listen for changes
+        function onMqlChange() { applyAutoHide(false); }
+        if (typeof mql.addEventListener === 'function') {
+          mql.addEventListener('change', onMqlChange);
+        } else if (typeof mql.addListener === 'function') {
+          // Safari fallback
+          mql.addListener(onMqlChange);
+        }
+
+        // Orientation change fallback
+        var onOrientation = function() { applyAutoHide(false); };
+        window.addEventListener('orientationchange', onOrientation);
+
+        // Cleanup listeners on scope destroy
+        $scope.$on('$destroy', function() {
+          try {
+            if (typeof mql.removeEventListener === 'function') {
+              mql.removeEventListener('change', onMqlChange);
+            } else if (typeof mql.removeListener === 'function') {
+              mql.removeListener(onMqlChange);
+            }
+          } catch(_) { /* ignore */ }
+          try { window.removeEventListener('orientationchange', onOrientation); } catch(_) { /* ignore */ }
+        });
+      } catch(e) {
+        console.warn('Auto-hide chat setup failed:', e);
+      }
+    })();
+    
     $scope.toggleChat = function() {
       console.log('Toggle chat clicked - current state:', $scope.chatHidden);
       $scope.chatHidden = !$scope.chatHidden;

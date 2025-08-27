@@ -318,6 +318,88 @@ body {
   .mobile-text-center {
     text-align: center;
   }
+  
+  /* Mobile Chat Layout Fix - Simple Height-Based Approach */
+  .main-content {
+    flex-direction: column !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .video-area {
+    flex: 1 !important;
+    max-height: 70vh !important;
+  }
+  
+  .control-panel-redesign {
+    flex-shrink: 0 !important;
+    z-index: 50 !important;
+    position: relative !important;
+    display: flex !important;
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
+    border-top: 1px solid #64748b !important;
+    backdrop-filter: blur(15px) !important;
+    padding: 14px 24px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 18px !important;
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(148, 163, 184, 0.1) !important;
+  }
+  
+  .chat-panel {
+    position: relative !important;
+    width: 100% !important;
+    height: 25vh !important;
+    max-height: 25vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    z-index: 10 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .chat-panel.hidden {
+    display: none !important;
+  }
+  
+  .chat-header {
+    flex-shrink: 0 !important;
+    z-index: 11 !important;
+  }
+  
+  #chatContainer {
+    flex: 1 !important;
+    min-height: 80px !important;
+    max-height: 250px !important;
+    height: auto !important; /* override desktop 100vh on small screens */
+    overflow-y: auto !important;
+  }
+  
+  .chat-input,
+  .chat-disabled {
+    flex-shrink: 0 !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 15 !important;
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
+    border-top: 1px solid #64748b !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 16px !important;
+  }
+}
+
+/* Mobile Landscape Orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+  /* Hide chat section on mobile landscape */
+  .chat-panel {
+    display: none !important;
+  }
+
+  .video-area {
+    max-height: 50vh !important;
+  }
 }
 
 /* Custom Scrollbar */
@@ -359,27 +441,52 @@ body {
 }
 
 /* Chat Panel Enhancements */
+.webinar-room-container #chatContainer,
+#chatContainer {
+  /* Desktop default: full viewport height for chat message area */
+  height: 100vh;
+}
+
 .chat-panel {
-  background: linear-gradient(145deg, #1e293b 0%, #0f172a 50%, #111827 100%);
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%);
   border-left: 1px solid #475569;
   backdrop-filter: blur(15px);
   box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.1);
 }
 
+/* Chat header - premium, consistent gradient */
+.chat-header {
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 -1px 0 rgba(148, 163, 184, 0.1);
+}
+
 .chat-messages {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(3, 7, 18, 0.9) 100%);
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
   backdrop-filter: blur(12px);
 }
 
 /* Enhanced Message Card Backgrounds */
 .chat-messages .bg-slate-700 {
-  background: linear-gradient(145deg, #2d3748 0%, #4a5568 30%, #374151 70%, #2d3748 100%) !important;
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
   border: 1px solid rgba(203, 213, 225, 0.25);
   box-shadow: 
     0 4px 20px rgba(0, 0, 0, 0.4), 
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Premium styling for user message cards too */
+.chat-messages .bg-blue-900 {
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
+  border: 1px solid rgba(203, 213, 225, 0.25);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
   position: relative;
   overflow: hidden;
 }
@@ -393,10 +500,26 @@ body {
   width: 100%;
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: left 0.8s ease;
 }
 
 .chat-messages .bg-slate-700:hover::before {
+  transition: left 0.8s ease; /* animate only on hover */
+  left: 100%;
+}
+
+/* Shine effect for user messages */
+.chat-messages .bg-blue-900::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+}
+
+.chat-messages .bg-blue-900:hover::before {
+  transition: left 0.8s ease; /* animate only on hover */
   left: 100%;
 }
 
@@ -430,22 +553,31 @@ body {
 }
 
 .chat-input {
-  background: linear-gradient(145deg, #1e293b 0%, #0f172a 50%, #020617 100%);
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
   border-top: 1px solid #64748b;
   backdrop-filter: blur(15px);
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(148, 163, 184, 0.1);
 }
 
-.chat-input input {
-  background: linear-gradient(135deg, rgba(51, 65, 85, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%) !important;
+/* Ensure disabled chat bar matches gradient on desktop too */
+.chat-disabled {
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
+  border-top: 1px solid #64748b;
+  backdrop-filter: blur(15px);
+}
+
+.chat-input input,
+input[ng-model="chat.newMessage"] {
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
   border: 1px solid #64748b !important;
   backdrop-filter: blur(8px);
   transition: all 0.3s ease;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.chat-input input:focus {
-  background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%) !important;
+.chat-input input:focus,
+input[ng-model="chat.newMessage"]:focus {
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
   border-color: #3b82f6 !important;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -463,20 +595,34 @@ body {
   box-shadow: 0 6px 16px rgba(59, 130, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
+/* Ensure chat input is always visible on mobile */
+@media (max-width: 768px) {
+  .chat-input,
+  .chat-disabled {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
+    border-top: 1px solid #64748b !important;
+    backdrop-filter: blur(15px) !important;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(148, 163, 184, 0.1) !important;
+    z-index: 1000 !important;
+  }
+}
+
 /* Enhanced System messages styling */
 .chat-messages .bg-slate-700.text-slate-300 {
-  background: linear-gradient(145deg, #059669 0%, #047857 30%, #065f46 70%, #064e3b 100%) !important;
-  color: #d1fae5 !important;
-  border: 1px solid rgba(16, 185, 129, 0.6);
+  background: linear-gradient(145deg, #0b1f4d 0%, #0a2a6a 50%, #071a38 100%) !important;
+  color: #e6efff !important;
+  border: 1px solid rgba(203, 213, 225, 0.35);
   box-shadow: 
-    0 4px 16px rgba(5, 150, 105, 0.4), 
-    inset 0 1px 0 rgba(52, 211, 153, 0.25),
+    0 4px 16px rgba(2, 6, 23, 0.5), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
 /* Control Panel Styling to Match Chat */
 .control-panel-redesign {
-  background: linear-gradient(145deg, #1e293b 0%, #0f172a 50%, #020617 100%);
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
   border-top: 1px solid #64748b;
   backdrop-filter: blur(15px);
   padding: 14px 24px;
@@ -485,6 +631,8 @@ body {
   justify-content: center;
   gap: 18px;
   box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(148, 163, 184, 0.1);
+  position: relative;
+  z-index: 5;
 }
 
 .ctrl-btn {
@@ -669,8 +817,8 @@ body {
 
 /* Premium Resume Button */
 .resume-btn {
-  background: linear-gradient(145deg, #3b82f6 0%, #2563eb 30%, #1d4ed8 70%, #1e40af 100%) !important;
-  border: 2px solid #1d4ed8 !important;
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
+  border: 2px solid rgba(148, 163, 184, 0.35) !important;
   box-shadow: 
     0 8px 25px rgba(59, 130, 246, 0.4), 
     inset 0 2px 0 rgba(255, 255, 255, 0.2),
@@ -679,10 +827,10 @@ body {
 }
 
 .resume-btn:hover {
-  background: linear-gradient(145deg, #2563eb 0%, #1d4ed8 30%, #1e40af 70%, #1e3a8a 100%) !important;
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
   transform: translateY(-2px) scale(1.02) !important;
   box-shadow: 
-    0 12px 35px rgba(59, 130, 246, 0.5), 
+    0 12px 35px rgba(2, 6, 23, 0.5), 
     inset 0 2px 0 rgba(255, 255, 255, 0.3),
     inset 0 -2px 0 rgba(0, 0, 0, 0.2) !important;
 }

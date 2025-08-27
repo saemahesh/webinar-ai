@@ -1,43 +1,11 @@
-ITERATION 12 ACTION PLAN - CRITICAL RESUME BUTTON FIX
+ITERATION 0 - ACTION PLAN
 
-CRITICAL ISSUE IDENTIFIED: Resume button not showing up on page load or countdown completion
-Root Cause: Recent mobile optimizations were starting videos muted, causing paused-state checks to fail
+Goal: Ensure mobile landscape uses full width for video, auto-hides chat, and shows control panel at bottom.
 
-Problem Areas Fixed:
-1. ✅ COUNTDOWN COMPLETION LOGIC
-   - Previously checked if video was paused before showing resume button
-   - Fixed: Always show resume button when countdown reaches 0
-   - Ensures users can unmute and start video with proper interaction
+Changes this iteration:
+- CSS (webinar-room.html):
+	- Hide chat panel entirely in landscape to remove gap.
+	- Show control panel fixed at bottom (50px) and resize video height to calc(100vh - 50px).
+- Controller (webinar-room-simple.controller.js): Keep auto-hide behavior for chat in mobile landscape.
 
-2. ✅ PAGE LOAD LOGIC (checkForResumeState)
-   - Previously required video to be paused to show resume button
-   - Fixed: Always show resume button for live webinars if user hasn't resumed
-   - Critical for page refresh scenarios and direct access to live webinars
-
-3. ✅ INITIALIZATION LOGIC (initializeRoom)
-   - Previously checked video.paused state to determine resume button display
-   - Fixed: Show resume button for all live webinars unless user has already resumed
-   - Ensures consistent behavior across all entry points
-
-Key Changes Made:
-- Countdown completion: Removed video.paused check, always show resume button
-- checkForResumeState(): Removed video.paused requirement, show for all live webinars
-- initializeRoom(): Use hasUserResumed flag instead of video.paused state
-- Enhanced logging to track resume button display logic
-
-Why This Was Critical:
-❌ Before: Users could enter live webinars with no way to unmute/start video
-❌ Audio stayed muted with no user interaction option
-❌ Mobile optimizations conflicted with resume button logic
-
-✅ After: Resume button always appears when needed
-✅ Users can always interact to unmute and start video
-✅ Consistent behavior across page load, countdown, and refresh scenarios
-
-Expected User Experience:
-1. Page loads on live webinar → Resume button appears
-2. Countdown reaches 0 → Resume button appears  
-3. User clicks resume → Video starts with audio
-4. Video plays normally with user control
-
-This fix ensures the fundamental user interaction flow works correctly!
+Next: Re-check issues.txt for updated feedback and iterate.
