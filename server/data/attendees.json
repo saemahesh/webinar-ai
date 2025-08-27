@@ -354,5 +354,31 @@
       "Whatsapp Number": "987657978677",
       "1756227867372": "987657978677"
     }
+  },
+  {
+    "id": "b7651911-54a0-43e6-8760-c6053d427c5c",
+    "webinarId": "5ab341c5-883f-4a20-ba5d-bfe884742d31",
+    "name": "kjnkjgns",
+    "email": "dkngkdjn@ref.fg",
+    "company": "jnjin",
+    "registeredAt": "2025-08-27T16:31:16.873Z",
+    "status": "registered",
+    "customFields": {
+      "Whatsapp Number": "76897678976879",
+      "1756227867372": "76897678976879"
+    }
+  },
+  {
+    "id": "74be40e2-2b6a-4c04-bb1f-8299ec285ba3",
+    "webinarId": "5ab341c5-883f-4a20-ba5d-bfe884742d31",
+    "name": "nf",
+    "email": "infi@fes.fse",
+    "company": "inij",
+    "registeredAt": "2025-08-27T16:33:20.517Z",
+    "status": "registered",
+    "customFields": {
+      "Whatsapp Number": "677867778678",
+      "1756227867372": "677867778678"
+    }
   }
 ]

@@ -1,4 +1,166 @@
 /* Custom Styles for Webinar.AI */
+/* Angular cloak utility */
+[ng\:cloak], [ng-cloak], .ng-cloak { display: none !important; }
+
+/* Early kill-switch for global nav via class on <html> */
+html.hide-global-nav #global-nav { display: none !important; }
+
+/* Tiny loading spinner for index.html */
+.loading { display: inline-block; width: 20px; height: 20px; border: 3px solid #dbeafe; border-radius: 50%; border-top-color: #2563eb; animation: spin 1s ease-in-out infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast transitions */
+.toast { transform: translateX(100%); transition: transform 0.3s ease-in-out; }
+.toast.show { transform: translateX(0); }
+/* Webinar Room specific styles moved from inline style tag */
+/* Hide global nav only when webinar room is present */
+body:has(.webinar-room-container) nav#global-nav { display: none !important; }
+
+.webinar-room-container {
+  min-height: 100vh;
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.webinar-room-content {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  flex-direction: row;
+  min-width: 0; /* allow children to shrink/grow properly */
+}
+
+.video-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  position: relative;
+  border-radius: 0;
+}
+
+.desktop-video-container { /* desktop growth behavior */
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+.video-container { /* inner fill */
+  flex: 1 1 auto;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: flex;
+}
+
+.chat-panel {
+  width: 350px;
+  background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
+  border-left: 2px solid #3a3f4f;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.chat-panel.hidden { display: none !important; }
+
+.info-group { display: flex; align-items: center; gap: 12px; flex: 1; }
+.live-badge { color: white; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 6px; border-radius: 3px; border: 1px solid #ff4444; animation: live-blink 1.5s infinite; }
+@keyframes live-blink { 0%, 50% { border-color: #ff4444; box-shadow: 0 0 0 rgba(255, 68, 68, 0.4); } 100% { border-color: #ff8888; box-shadow: 0 0 8px rgba(255, 68, 68, 0.8); } }
+.webinar-info { color: #e2e8f0; font-size: 13px; font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.main-controls { display: flex; gap: 8px; align-items: center; justify-content: center; flex: 0 0 auto; }
+.ctrl-btn { width: 44px; height: 44px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; font-size: 16px; background: #404040; color: white; position: relative; }
+.ctrl-btn:hover { background: #505050; transform: translateY(-1px); }
+.ctrl-btn.muted, .ctrl-btn.off { background: #dc3545; }
+.ctrl-btn.active { background: #0078d4; }
+.ctrl-btn.leave-btn { background: #dc3545; }
+.ctrl-btn.leave-btn:hover { background: #c82333; }
+.action-group { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end; }
+.participant-count { color: #e2e8f0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.1); padding: 8px 14px; border-radius: 20px; border: 2px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); min-width: 70px; justify-content: center; }
+
+/* Resume overlay */
+.resume-overlay { z-index: 1000; backdrop-filter: blur(5px); position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+
+/* Bottom control panel container baseline */
+.control-panel-redesign { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; gap: 12px; background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important; padding: 12px 20px; border-radius: 0; backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2); z-index: 1000; flex-wrap: wrap; margin-top: auto; }
+
+/* Desktop specifics */
+@media (min-width: 769px) {
+  .main-content { width: 100% !important; min-width: 0 !important; position: relative; }
+  .control-panel-redesign { position: absolute !important; left: 0 !important; right: 350px !important; bottom: 0 !important; width: auto !important; margin-top: 0 !important; }
+  .video-area .video-container { height: 100% !important; }
+  .video-area video { object-fit: contain !important; object-position: center center !important; }
+  .main-content:has(.chat-panel.hidden) .control-panel-redesign { right: 0 !important; }
+}
+
+/* Mobile overrides */
+@media screen and (max-width: 768px) {
+  html, body { margin: 0 !important; padding: 0 !important; height: 100vh !important; overflow: hidden !important; }
+  .webinar-room-container { height: 100vh !important; min-height: 100vh !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+  .webinar-room-content { height: 100vh !important; padding: 0 !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
+  .main-content { flex-direction: column !important; height: 100vh !important; padding: 0 !important; gap: 0 !important; margin: 0 !important; flex: 1 !important; display: flex !important; overflow: hidden !important; }
+  .control-panel-redesign { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; height: 60px !important; padding: 8px 12px !important; gap: 6px !important; border-radius: 0 !important; justify-content: center !important; border-top: 1px solid rgba(255, 255, 255, 0.08) !important; flex-shrink: 0 !important; z-index: 1000 !important; }
+  .video-area { height: 35vh !important; max-height: 35vh !important; min-height: 35vh !important; flex: none !important; margin: 0 !important; padding: 0 !important; position: relative !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+  .main-content.chat-hidden .video-area { height: calc(100vh - 60px) !important; max-height: calc(100vh - 60px) !important; min-height: calc(100vh - 60px) !important; }
+  .video-area > div { margin: 0 !important; padding: 0 !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; min-width: 0 !important; }
+  .video-area .text-center { margin: 0 !important; padding: 10px !important; }
+  .video-area .mb-4, .video-area .mb-2 { margin-bottom: 0 !important; }
+  .video-area video { margin: 0 !important; padding: 0 !important; display: block !important; height: 100% !important; width: 100% !important; min-width: 1px !important; min-height: 1px !important; object-fit: contain !important; }
+  .video-area .flex-1 { height: 100% !important; margin: 0 !important; padding: 0 !important; }
+  .video-area .bg-slate-800 { margin: 10px !important; }
+  .video-area .max-w-md { max-width: 90% !important; }
+  .chat-panel { width: 100% !important; height: calc(65vh - 60px) !important; max-height: calc(65vh - 60px) !important; min-height: calc(65vh - 60px) !important; border-left: none !important; border-top: 2px solid #3a3f4f !important; flex: none !important; margin: 0 !important; overflow-y: auto !important; position: relative !important; display: flex !important; flex-direction: column !important; }
+  .chat-panel .flex-1 { overflow-y: auto !important; min-height: 0 !important; }
+  .chat-input { position: sticky !important; bottom: 0 !important; background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important; border-top: 1px solid #475569 !important; flex-shrink: 0 !important; }
+  .floating-controls { bottom: 8px; left: 50%; transform: translateX(-50%); gap: 8px; padding: 6px 12px; }
+  .control-button { width: 34px; height: 34px; font-size: 12px; }
+  .ctrl-btn { width: 34px; height: 34px; font-size: 13px; }
+  .live-badge { font-size: 10px; padding: 2px 4px; border-radius: 2px; border: 1px solid #ff4444; animation: live-blink 1.5s infinite; }
+  .participant-count { font-size: 13px; padding: 4px 10px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.12); }
+}
+
+/* Extra small mobile screens */
+@media screen and (max-width: 480px) {
+  .bottom-control-panel { padding: 6px 8px; min-height: 45px; }
+  .control-button { width: 32px; height: 32px; font-size: 11px; }
+  .status-left, .status-right { font-size: 10px; }
+  .webinar-title { max-width: 60px; font-size: 9px; }
+  .video-area { height: 35vh !important; }
+  .chat-panel { height: 65vh !important; }
+  .participant-info { top: 10px; left: 10px; padding: 8px 12px; font-size: 12px; }
+  .status-indicator { top: 10px; right: 10px; }
+}
+
+/* Mobile landscape */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .main-content { flex-direction: row !important; height: 100vh !important; overflow: hidden !important; }
+  .video-area { height: 100vh !important; max-height: 100vh !important; min-height: 100vh !important; width: 100% !important; flex: none !important; position: relative !important; }
+  .chat-panel { display: none !important; width: 0 !important; height: 0 !important; border: 0 !important; overflow: hidden !important; }
+  .control-panel-redesign { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; height: 50px !important; z-index: 1000 !important; background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important; backdrop-filter: blur(10px) !important; border-top: 1px solid #3a3f4f !important; border-radius: 0 !important; display: flex !important; }
+  .video-area > div { height: calc(100vh - 50px) !important; margin: 0 !important; padding: 0 !important; }
+  #webinarVideo { height: calc(100vh - 50px) !important; width: 100% !important; object-fit: contain !important; }
+  .landscape-hidden { display: none !important; }
+  .ctrl-btn { width: 35px !important; height: 35px !important; font-size: 12px !important; }
+  .live-badge { font-size: 9px !important; padding: 1px 3px !important; }
+  .participant-count { font-size: 11px !important; padding: 4px 8px !important; }
+  .control-panel-redesign .participant-count { display: flex !important; }
+}
+
+/* Hide native media controls across browsers */
+video::-webkit-media-controls { display: none !important; }
+video::-webkit-media-controls-enclosure { display: none !important; }
+video::-moz-media-controls { display: none !important; }
 
 /* Global Styles */
 * {
@@ -340,10 +502,10 @@ body {
   background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
     border-top: 1px solid #64748b !important;
     backdrop-filter: blur(15px) !important;
-    padding: 14px 24px !important;
+  padding: 10px 14px !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 18px !important;
+  gap: 10px !important;
     box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(148, 163, 184, 0.1) !important;
   }
   
@@ -388,6 +550,11 @@ body {
     margin-bottom: 0 !important;
     padding-bottom: 16px !important;
   }
+  .control-panel-redesign { padding: 8px 10px !important; gap: 8px !important; height: 52px !important; }
+  .control-panel-redesign .ctrl-btn { width: 32px; height: 32px; padding: 6px; font-size: 12px; }
+  .control-panel-redesign .ctrl-btn i { font-size: 1em; line-height: 1; }
+  .live-badge { font-size: 9px !important; padding: 1px 3px !important; }
+  .participant-count { font-size: 12px !important; padding: 4px 8px !important; border-width: 1px !important; }
 }
 
 /* Mobile Landscape Orientation */
@@ -625,11 +792,11 @@ input[ng-model="chat.newMessage"]:focus {
   background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
   border-top: 1px solid #64748b;
   backdrop-filter: blur(15px);
-  padding: 14px 24px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 12px;
   box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(148, 163, 184, 0.1);
   position: relative;
   z-index: 5;
@@ -639,10 +806,10 @@ input[ng-model="chat.newMessage"]:focus {
   background: linear-gradient(145deg, #374151 0%, #4b5563 30%, #374151 70%, #2d3748 100%);
   border: 1px solid #64748b;
   color: #f1f5f9;
-  padding: 14px;
+  padding: 12px;
   border-radius: 50%;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -654,7 +821,7 @@ input[ng-model="chat.newMessage"]:focus {
   backdrop-filter: blur(8px);
   position: relative;
   overflow: hidden;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .ctrl-btn i {
@@ -850,3 +1017,22 @@ input[ng-model="chat.newMessage"]:focus {
     transform: translateY(0) scale(1);
   }
 }
+
+/* Webinar Ended page styles moved from inline */
+.webinar-ended-container { min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+.ended-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 40px; max-width: 600px; width: 100%; text-align: center; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); }
+.ended-icon { font-size: 4rem; color: #4CAF50; margin-bottom: 20px; }
+.ended-title { font-size: 2.5rem; font-weight: 600; color: #333; margin-bottom: 10px; }
+.webinar-title { font-size: 1.5rem; color: #666; margin-bottom: 30px; font-weight: 400; }
+.thank-you-text { font-size: 1.3rem; color: #4CAF50; font-weight: 500; margin-bottom: 10px; }
+.details-text { color: #666; margin-bottom: 30px; font-size: 1.1rem; }
+.webinar-summary { background: rgba(102, 126, 234, 0.1); border-radius: 15px; padding: 20px; margin-bottom: 30px; }
+.summary-item { display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: #555; font-size: 1rem; }
+.summary-item:last-child { margin-bottom: 0; }
+.summary-item i { margin-right: 10px; width: 20px; color: #667eea; }
+.action-buttons { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
+.webinar-ended-container .btn { padding: 12px 25px; border: none; border-radius: 25px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.webinar-ended-container .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.webinar-ended-container .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3); }
+.webinar-ended-container .btn-secondary { background: rgba(102, 126, 234, 0.1); color: #667eea; border: 2px solid #667eea; }
+.webinar-ended-container .btn-secondary:hover { background: #667eea; color: white; transform: translateY(-2px); }

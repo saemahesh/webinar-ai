@@ -30,7 +30,19 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Static file serving
-app.use(express.static(path.join(__dirname, '../public')));
+// Ensure HTML files are never cached while allowing long cache for static assets
+app.use(express.static(path.join(__dirname, '../public'), {
+  etag: false,
+  lastModified: false,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+    }
+  }
+}));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Ensure data directory exists
@@ -59,6 +71,11 @@ app.use('/api/public/webinars', require('./routes/public-webinars'));
 
 // Catch all handler for frontend routing
 app.get('*', (req, res) => {
+  // Explicitly disable caching for the HTML shell
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 

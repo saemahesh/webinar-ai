@@ -1,11 +1,11 @@
 ITERATION 0 - ACTION PLAN
 
-Goal: Ensure mobile landscape uses full width for video, auto-hides chat, and shows control panel at bottom.
+Goal: Make the webinar room control panel responsive on mobile; reduce oversized icons/buttons and spacing.
 
 Changes this iteration:
-- CSS (webinar-room.html):
-	- Hide chat panel entirely in landscape to remove gap.
-	- Show control panel fixed at bottom (50px) and resize video height to calc(100vh - 50px).
-- Controller (webinar-room-simple.controller.js): Keep auto-hide behavior for chat in mobile landscape.
+- main.css: Tightened mobile styles for control buttons and badges
+	- At <=768px: smaller ctrl-btn/control-button sizes and reduced gaps
+	- At <=640px: decreased padding, gap, and button sizes; tuned live/participant badges
+	- At <=480px: ensured compact controls remain readable
 
-Next: Re-check issues.txt for updated feedback and iterate.
+Next: Re-read issues.txt for updated feedback; if icons still feel large or overlap, further reduce sizes or stack layout.
