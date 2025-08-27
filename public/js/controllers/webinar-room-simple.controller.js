@@ -142,19 +142,13 @@ angular.module('webinarApp')
                 $scope.setupVideoStateMonitoring();
                 
                 // Check if video is already playing before showing button
-                const video = document.getElementById('webinarVideo');
-                if (video && !video.paused) {
-                  console.log('🎬 Video is already playing, not showing resume button');
-                  $scope.showResumeButton = false;
-                } else {
-                  // Show "Let's Go" button only if video is not playing
-                  console.log('🎬 Setting showResumeButton to true');
-                  $scope.showResumeButton = true;
-                  console.log('🎬 Current showResumeButton value:', $scope.showResumeButton);
-                  console.log('🎬 Current roomState.status:', $scope.roomState.status);
-                  console.log('🎬 Current isWebinarLive:', $scope.isWebinarLive);
-                  console.log('🎬 Countdown complete - showing "Let\'s Go" button for user interaction');
-                }
+                // Always show "Let's Go" button when countdown completes to ensure user interaction
+                // This allows users to unmute and properly start the video
+                console.log('🎬 Countdown complete - always showing "Let\'s Go" button for user interaction');
+                $scope.showResumeButton = true;
+                console.log('🎬 Current showResumeButton value:', $scope.showResumeButton);
+                console.log('🎬 Current roomState.status:', $scope.roomState.status);
+                console.log('🎬 Current isWebinarLive:', $scope.isWebinarLive);
               }
             }, 300);
             return;
@@ -984,11 +978,9 @@ angular.module('webinarApp')
     // Check if video should show resume button (on refresh during live webinar)
     $scope.checkForResumeState = function() {
       if ($scope.roomState.status === 'live' && $scope.webinar.videoPath && !$scope.hasUserResumed) {
-        const video = document.getElementById('webinarVideo');
-        if (video && video.paused) {
-          console.log('Live webinar detected with paused video - showing resume button');
-          $scope.showResumeButton = true;
-        }
+        console.log('Live webinar detected - showing resume button for user interaction');
+        $scope.showResumeButton = true;
+        console.log('Resume button set to true on page load for live webinar');
       }
     };
     
@@ -1160,19 +1152,19 @@ angular.module('webinarApp')
         console.log('Full webinar object:', $scope.webinar);
       }
       
-      // If webinar is currently live, set up video monitoring and show resume button if needed
+      // If webinar is currently live, set up video monitoring and show resume button for user interaction
       if ($scope.roomState.status === 'live' && $scope.webinar.videoPath) {
         setTimeout(function() {
           console.log('Setting up video monitoring for live webinar');
           $scope.setupVideoStateMonitoring();
           
-          const video = document.getElementById('webinarVideo');
-          if (video && video.paused) {
-            console.log('Live webinar with paused video - showing resume button');
+          // Always show resume button for live webinars to ensure user can interact and unmute
+          if (!$scope.hasUserResumed) {
+            console.log('Live webinar detected - showing resume button for user interaction');
             $scope.showResumeButton = true;
             $scope.$apply();
           } else {
-            console.log('Live webinar with playing video - no action needed');
+            console.log('User has already resumed - no action needed');
           }
         }, 2000);
       }

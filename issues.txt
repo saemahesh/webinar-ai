@@ -25,6 +25,5 @@ Read Mandatory instructions to follow on every iteration:
 --------------------------------------------------------
 **** Issue List ****
 
-question: why we need resync every 15 seconds also? we should set the video to the correct time position only on page load when click the resume button
-after that we can rely on the video element's built-in time updates and only check for significant discrepancies (e.g., more than 5 seconds off) before showing the resume button again.
-
+on page load or countdown comes to 0 , resume buttons not coming up 
+becoz of that audio is in mute , it auto playingn video
