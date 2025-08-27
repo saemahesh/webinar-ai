@@ -1,24 +1,24 @@
-**Action Plan - Iteration 7**
+**Action Plan - Iteration 8**
 
-**Current Issues**: 
-1. Message card backgrounds need improvement for better UX
-2. Live icon needs to be more prominent and visually appealing
-3. Video icon is not clearly visible like mic icon
+**Current Issue**: 
+- Mobile video playback issues on Android phones
+- Videos downloading multiple times
+- Need to start video only once with real-time timestamp based on start time
 
 **Analysis**:
-- Message cards background gradients need refinement
-- Live badge needs better prominence and visual appeal
-- Video button icon/styling needs enhancement for better visibility
-- Need consistent iconography across all control buttons
+- Multiple video download requests suggest multiple play attempts
+- Android mobile browsers have different video handling requirements
+- Need to implement proper video state management
+- Real-time timestamp calculation needs to be done once and cached
 
 **Solution Plan**:
-1. Improve message card background gradients and styling
-2. Enhance live badge with better gradients and effects
-3. Improve video icon visibility and button styling
-4. Ensure all icons have consistent visibility and appeal
+1. Add video loading state management to prevent multiple downloads
+2. Implement single video initialization with proper timestamp calculation
+3. Add mobile-specific video handling for Android
+4. Prevent duplicate play attempts
 
 **Implementation Steps**:
-1. Update message card backgrounds
-2. Enhance live badge styling for prominence
-3. Improve video control button and icon visibility
-4. Test overall visual consistency
+1. Add video loading state tracking
+2. Implement single initialization logic
+3. Add mobile/Android specific handling
+4. Prevent multiple download attempts

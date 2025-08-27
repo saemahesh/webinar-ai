@@ -16,10 +16,19 @@ angular.module('webinarApp')
     $scope.isVideoLoaded = false;
     $scope.videoError = false;
     $scope.attendeeCount = 0;
-  $scope.isWebinarLive = false; // Only true when scheduled start is reached
+    $scope.isWebinarLive = false; // Only true when scheduled start is reached
     $scope.isLeavingRoom = false; // Track if user is leaving
     $scope.showResumeButton = false; // Resume button state
     $scope.hasUserResumed = false; // Track if user has manually resumed
+    
+    // Video state management to prevent multiple downloads/plays
+    $scope.videoState = {
+      isInitialized: false,
+      isLoading: false,
+      hasStarted: false,
+      calculatedStartTime: null,
+      lastPlayAttempt: 0
+    };
     
     // Audio/Video controls (disabled by default)
     $scope.micEnabled = false;
@@ -616,41 +625,110 @@ angular.module('webinarApp')
     });
     
     $scope.playVideo = function() {
-      console.log('=== playVideo() called - SIMPLIFIED VERSION ===');
-      const video = document.getElementById('webinarVideo');
-      if (video) {
-        console.log('Video element found:');
-        console.log('- src:', video.src);
-        console.log('- readyState:', video.readyState);
-        console.log('- videoWidth:', video.videoWidth);
-        console.log('- videoHeight:', video.videoHeight);
-        console.log('- duration:', video.duration);
-        console.log('- currentTime before:', video.currentTime);
-        console.log('- paused:', video.paused);
-        
-        // SIMPLIFIED: Just play without time sync for now
-        console.log('Attempting simple video play...');
-        
-        // Ensure video is not muted (unmute the video for audio)
-        video.muted = false;
-        console.log('🔊 Video unmuted for audio playback');
-        
-        video.play().then(function() {
-          console.log('✅ Video play() succeeded');
-          console.log('- paused after play:', video.paused);
-          console.log('- muted:', video.muted);
-          console.log('- volume:', video.volume);
-        }).catch(function(error) {
-          console.error('❌ Error playing video:', error);
-          console.log('Error details:', {
-            name: error.name,
-            message: error.message,
-            code: error.code
-          });
-        });
-      } else {
-        console.error('❌ Video element not found in playVideo()');
+      console.log('=== playVideo() called - MOBILE OPTIMIZED VERSION ===');
+      
+      // Prevent multiple simultaneous play attempts
+      const now = Date.now();
+      if (now - $scope.videoState.lastPlayAttempt < 2000) {
+        console.log('⚠️ Play attempt too soon, ignoring to prevent multiple downloads');
+        return;
       }
+      $scope.videoState.lastPlayAttempt = now;
+      
+      const video = document.getElementById('webinarVideo');
+      if (!video) {
+        console.error('❌ Video element not found in playVideo()');
+        return;
+      }
+      
+      // Check if video is already playing
+      if (!video.paused) {
+        console.log('▶️ Video is already playing, no action needed');
+        return;
+      }
+      
+      console.log('Video element found:');
+      console.log('- src:', video.src);
+      console.log('- readyState:', video.readyState);
+      console.log('- videoWidth:', video.videoWidth);
+      console.log('- videoHeight:', video.videoHeight);
+      console.log('- duration:', video.duration);
+      console.log('- currentTime before:', video.currentTime);
+      console.log('- paused:', video.paused);
+      
+      // Mobile-specific optimizations
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        console.log('📱 Mobile device detected, applying mobile optimizations');
+        
+        // For mobile, especially Android, ensure proper attributes
+        video.playsInline = true;
+        video.preload = 'metadata';
+        
+        if (isAndroid) {
+          console.log('🤖 Android device detected, applying Android-specific fixes');
+          // Android-specific handling
+          video.controls = false; // Ensure no native controls interfere
+        }
+      }
+      
+      // Calculate and set video time only once when starting
+      if (!$scope.videoState.hasStarted) {
+        const currentTime = $scope.calculateLiveVideoTime();
+        if (currentTime !== null && currentTime > 0) {
+          console.log('⏰ Setting video start time to:', currentTime, 'seconds');
+          video.currentTime = currentTime;
+          $scope.videoState.calculatedStartTime = currentTime;
+        }
+        $scope.videoState.hasStarted = true;
+      }
+      
+      // For mobile, start muted to avoid autoplay restrictions, then unmute
+      if (isMobile) {
+        video.muted = true;
+        console.log('🔇 Starting muted for mobile autoplay compliance');
+      } else {
+        video.muted = false;
+        console.log('🔊 Video unmuted for audio playback (desktop)');
+      }
+      
+      video.play().then(function() {
+        console.log('✅ Video play() succeeded');
+        
+        // Unmute after successful play on mobile
+        if (isMobile) {
+          setTimeout(function() {
+            video.muted = false;
+            console.log('🔊 Video unmuted after successful mobile play');
+          }, 100);
+        }
+        
+        console.log('- paused after play:', video.paused);
+        console.log('- muted:', video.muted);
+        console.log('- volume:', video.volume);
+        
+        // Hide resume button since video is playing
+        $scope.showResumeButton = false;
+        if (!$scope.$$phase) {
+          $scope.$apply();
+        }
+        
+      }).catch(function(error) {
+        console.error('❌ Error playing video:', error);
+        console.log('Error details:', {
+          name: error.name,
+          message: error.message,
+          code: error.code
+        });
+        
+        // Show resume button on play failure
+        $scope.showResumeButton = true;
+        if (!$scope.$$phase) {
+          $scope.$apply();
+        }
+      });
     };
     
     // Calculate what time the video should be at based on webinar start time
@@ -727,27 +805,89 @@ angular.module('webinarApp')
     
     // Resume video functionality (for after refresh)
     $scope.resumeVideo = function() {
-      console.log('Resume video clicked');
+      console.log('🎬 Resume video clicked - MOBILE OPTIMIZED');
+      
+      // Prevent multiple resume attempts
+      const now = Date.now();
+      if (now - $scope.videoState.lastPlayAttempt < 2000) {
+        console.log('⚠️ Resume attempt too soon, ignoring to prevent multiple downloads');
+        return;
+      }
+      $scope.videoState.lastPlayAttempt = now;
+      
       $scope.showResumeButton = false;
       $scope.hasUserResumed = true;
       
       const video = document.getElementById('webinarVideo');
-      if (video && $scope.webinar.videoPath) {
-        // Calculate correct time position for live simulation
-        const currentTime = $scope.calculateLiveVideoTime();
+      if (!video || !$scope.webinar.videoPath) {
+        console.error('❌ Video element or path not found');
+        return;
+      }
+      
+      // Mobile device detection
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        console.log('📱 Mobile resume - applying mobile optimizations');
+        video.playsInline = true;
+        video.preload = 'metadata';
+        
+        if (isAndroid) {
+          console.log('🤖 Android resume - applying Android-specific fixes');
+          video.controls = false;
+        }
+      }
+      
+      // Use cached start time if available, otherwise calculate
+      let currentTime;
+      if ($scope.videoState.calculatedStartTime !== null) {
+        currentTime = $scope.videoState.calculatedStartTime;
+        console.log('📺 Using cached start time:', currentTime, 'seconds');
+      } else {
+        currentTime = $scope.calculateLiveVideoTime();
         if (currentTime !== null && currentTime > 0) {
-          video.currentTime = currentTime;
-          console.log('Resuming video at time:', currentTime, 'seconds');
+          $scope.videoState.calculatedStartTime = currentTime;
+          console.log('⏰ Calculated new start time:', currentTime, 'seconds');
+        }
+      }
+      
+      if (currentTime !== null && currentTime > 0) {
+        video.currentTime = currentTime;
+        console.log('🕐 Resuming video at time:', currentTime, 'seconds');
+      }
+      
+      // Start muted on mobile to ensure playback
+      if (isMobile) {
+        video.muted = true;
+        console.log('🔇 Starting muted for mobile resume');
+      } else {
+        video.muted = false;
+      }
+      
+      video.play().then(() => {
+        console.log('✅ Video resumed successfully');
+        
+        // Unmute after successful play on mobile
+        if (isMobile) {
+          setTimeout(function() {
+            video.muted = false;
+            console.log('🔊 Video unmuted after successful mobile resume');
+          }, 100);
         }
         
-        video.play().then(() => {
-          console.log('Video resumed successfully');
-          // Hide all other controls after resume
-          $scope.hideOtherControlsAfterResume();
-        }).catch(error => {
-          console.error('Error resuming video:', error);
-        });
-      }
+        // Hide all other controls after resume
+        $scope.hideOtherControlsAfterResume();
+        $scope.videoState.hasStarted = true;
+        
+      }).catch(error => {
+        console.error('❌ Error resuming video:', error);
+        // Show resume button again on error
+        $scope.showResumeButton = true;
+        if (!$scope.$$phase) {
+          $scope.$apply();
+        }
+      });
     };
     
     // Hide other video controls after manual resume

@@ -25,12 +25,10 @@ Read Mandatory instructions to follow on every iteration:
 --------------------------------------------------------
 **** Issue List ****
 
+in webinar room page
+in mobile view , the video not playing sometimes in android phones
+downloading video multiple times. fix it 
+you should start the video only once with its real time timestamp based on when it started 
 
-keep chatbox section bg color, chat msg color etc look good user experience
-still need improvement and keep consistency accorss the chat messages and input areas
-and match with bottom control area(mic, video etc)
 
-message card bg also need to be improved for better user experience
-live icon need to be more prominent and visually appealing
-video icon is not clearly visible like mic icon
 
