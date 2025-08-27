@@ -272,6 +272,15 @@ angular.module('webinarApp')
     $scope.resumeVideo = function() {
       console.log('Resume video called');
       $scope.showResumeButton = false;
+      
+      // Ensure controls are visible after resume
+      const video = document.getElementById('webinarVideo');
+      if (video) {
+        video.controls = true;
+        video.setAttribute('controls', 'controls');
+        console.log('Video controls explicitly enabled after resume');
+      }
+      
       $scope.playVideo();
     };
 

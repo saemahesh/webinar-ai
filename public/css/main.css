@@ -89,8 +89,8 @@ body:has(.webinar-room-container) nav#global-nav { display: none !important; }
 .action-group { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end; }
 .participant-count { color: #e2e8f0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.1); padding: 8px 14px; border-radius: 20px; border: 2px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); min-width: 70px; justify-content: center; }
 
-/* Resume overlay */
-.resume-overlay { z-index: 1000; backdrop-filter: blur(5px); position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+/* Resume overlay - leave space for video controls at bottom */
+.resume-overlay { z-index: 500; backdrop-filter: blur(5px); position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 60px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
 
 /* Bottom control panel container baseline */
 .control-panel-redesign { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; gap: 12px; background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important; padding: 12px 20px; border-radius: 0; backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2); z-index: 1000; flex-wrap: wrap; margin-top: auto; }
@@ -157,10 +157,8 @@ body:has(.webinar-room-container) nav#global-nav { display: none !important; }
   .control-panel-redesign .participant-count { display: flex !important; }
 }
 
-/* Hide native media controls across browsers */
-video::-webkit-media-controls { display: none !important; }
-video::-webkit-media-controls-enclosure { display: none !important; }
-video::-moz-media-controls { display: none !important; }
+/* Show native media controls for debugging playback issues (was previously hidden) */
+/* If needed later, scope any hiding to a specific class instead of global video selector. */
 
 /* Global Styles */
 * {

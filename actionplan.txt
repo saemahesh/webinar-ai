@@ -1,5 +1,9 @@
 ITERATION 0 - ACTION PLAN
-
+Iteration 1 plan:
+1) Controls not visible after resume - fixed resume overlay covering controls (bottom: 60px instead of 0).
+2) Explicitly enable controls in resumeVideo() function via JS (video.controls = true).
+3) Lowered resume overlay z-index from 1000 to 500 to prevent blocking controls.
+4) Next: if still not visible, check if video element is properly loaded and controls are supported.
 Goal: Make the webinar room control panel responsive on mobile; reduce oversized icons/buttons and spacing.
 
 Changes this iteration:
