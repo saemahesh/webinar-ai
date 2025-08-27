@@ -1,0 +1,12 @@
+{
+  "name": "webinar-ai-cache-busting",
+  "version": "1.0.0",
+  "description": "Cache busting script for webinar-ai application",
+  "scripts": {
+    "add-versioning": "node add-versioning.js",
+    "version-files": "node add-versioning.js"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

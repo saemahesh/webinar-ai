@@ -25,5 +25,7 @@ Read Mandatory instructions to follow on every iteration:
 --------------------------------------------------------
 **** Issue List ****
 
-on page load or countdown comes to 0 , resume buttons not coming up 
-becoz of that audio is in mute , it auto playingn video
+i removed all your changes, simpley create a script
+which will append versioning to all js and css file in all html files
+when i run that script, it should update all the file references in the HTML files to include the versioning.
+and make sure it execute automatically when i do git add command

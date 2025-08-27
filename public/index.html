@@ -63,15 +63,106 @@
         }
     </script>
     
-    <!-- AngularJS -->
+    <!-- External Dependencies (no cache busting needed) -->
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
     <script src="https://unpkg.com/@uirouter/angularjs@1.0.30/release/angular-ui-router.min.js"></script>
-    
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/main.css">
+    <!-- Local Resources with Cache Busting -->
+    <script>
+        // Load only local CSS and JS with cache busting
+        const timestamp = Date.now();
+        console.log('Loading resources with timestamp:', timestamp);
+        
+        // Load main CSS with cache busting
+        const cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.type = 'text/css';
+        cssLink.href = `/css/main.css?v=${timestamp}`;
+        cssLink.onload = function() {
+            console.log('✅ CSS loaded with cache busting: main.css');
+        };
+        document.head.appendChild(cssLink);
+        
+        // Function to load all local JS files with cache busting
+        function loadLocalScripts() {
+            console.log('Loading local JavaScript files with cache busting...');
+            
+            const scripts = [
+                `js/app.js?v=${timestamp}`,
+                `js/services/auth.service.js?v=${timestamp}`,
+                `js/services/webinar.service.js?v=${timestamp}`,
+                `js/services/toast.service.js?v=${timestamp}`,
+                `js/directives/file-upload.directive.js?v=${timestamp}`,
+                `js/controllers/nav.controller.js?v=${timestamp}`,
+                `js/controllers/home.controller.js?v=${timestamp}`,
+                `js/controllers/login.controller.js?v=${timestamp}`,
+                `js/controllers/register.controller.js?v=${timestamp}`,
+                `js/controllers/dashboard.controller.js?v=${timestamp}`,
+                `js/controllers/admin.controller.js?v=${timestamp}`,
+                `js/controllers/webinar-details.controller.js?v=${timestamp}`,
+                `js/controllers/webinar-room.controller.js?v=${timestamp}`,
+                `js/controllers/join-webinar.controller.js?v=${timestamp}`,
+                `js/controllers/host-control-panel.controller.js?v=${timestamp}`,
+                `js/controllers/webinar-ended.controller.js?v=${timestamp}`,
+                `js/controllers/toast.controller.js?v=${timestamp}`
+            ];
+            
+            let loadedScripts = 0;
+            const totalScripts = scripts.length;
+            
+            scripts.forEach((src) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = function() {
+                    loadedScripts++;
+                    console.log(`✓ Loaded: ${src} (${loadedScripts}/${totalScripts})`);
+                    
+                    if (loadedScripts === totalScripts) {
+                        console.log('✓ All local scripts loaded successfully');
+                    }
+                };
+                script.onerror = function() {
+                    console.error(`✗ Failed to load: ${src}`);
+                    loadedScripts++;
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Wait for Angular and UI Router to be available, then load local scripts
+        function waitForDependencies() {
+            if (typeof angular !== 'undefined' && angular.module) {
+                try {
+                    angular.module('ui.router');
+                    console.log('✓ External dependencies loaded, loading local scripts...');
+                    loadLocalScripts();
+                } catch(e) {
+                    console.log('Waiting for UI Router...');
+                    setTimeout(waitForDependencies, 100);
+                }
+            } else {
+                console.log('Waiting for Angular...');
+                setTimeout(waitForDependencies, 100);
+            }
+        }
+        
+        // Start loading process when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', waitForDependencies);
+        } else {
+            waitForDependencies();
+        }
+        
+        // Global error handling
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error, 'File:', e.filename, 'Line:', e.lineno);
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+        });
+    </script>
     
     <!-- Custom Styles -->
     <style>
@@ -232,22 +323,22 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="/js/app.js"></script>
-    <script src="/js/services/auth.service.js"></script>
-    <script src="/js/services/toast.service.js"></script>
-    <script src="/js/services/webinar.service.js"></script>
-    <script src="/js/directives/file-upload.directive.js"></script>
-    <script src="/js/controllers/nav.controller.js"></script>
-    <script src="/js/controllers/toast.controller.js"></script>
-    <script src="/js/controllers/home.controller.js"></script>
-    <script src="/js/controllers/login.controller.js"></script>
-    <script src="/js/controllers/register.controller.js"></script>
-    <script src="/js/controllers/admin.controller.js"></script>
-    <script src="/js/controllers/dashboard.controller.js"></script>
-    <script src="/js/controllers/webinar-details.controller.js"></script>
-    <script src="/js/controllers/join-webinar.controller.js"></script>
-    <script src="/js/controllers/webinar-room-simple.controller.js"></script>
-    <script src="/js/controllers/webinar-ended.controller.js"></script>
-    <!-- <script src="/js/controllers/host-control-panel.controller.js"></script> -->
+    <script src="/js/app.js?v=1756297148162"></script>
+    <script src="/js/services/auth.service.js?v=1756297148162"></script>
+    <script src="/js/services/toast.service.js?v=1756297148162"></script>
+    <script src="/js/services/webinar.service.js?v=1756297148162"></script>
+    <script src="/js/directives/file-upload.directive.js?v=1756297148162"></script>
+    <script src="/js/controllers/nav.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/toast.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/home.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/login.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/register.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/admin.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/dashboard.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/webinar-details.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/join-webinar.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/webinar-room-simple.controller.js?v=1756297148162"></script>
+    <script src="/js/controllers/webinar-ended.controller.js?v=1756297148162"></script>
+    <!-- <script src="/js/controllers/host-control-panel.controller.js?v=1756297148162"></script> -->
 </body>
 </html>
