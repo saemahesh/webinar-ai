@@ -1,4 +1,16 @@
-<!-- Public Webinar Join Page -->
+<!-- Public Webinar Join Page - Cache Busted for Mobile -->
+<script>
+  // Prevent caching on mobile devices for this critical page
+  if (typeof document !== 'undefined') {
+    var meta = document.createElement('meta');
+    meta.httpEquiv = 'Cache-Control';
+    meta.content = 'no-cache, no-store, must-revalidate';
+    document.getElementsByTagName('head')[0].appendChild(meta);
+    
+    console.log('📱 Join Webinar Page: Cache control applied for mobile');
+  }
+</script>
+
 <div class="min-h-screen bg-slate-900">
   
   <!-- Loading State -->

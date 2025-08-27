@@ -508,6 +508,7 @@ angular.module('webinarApp')
           // Always add domain prefix for relative paths
           videoUrl = baseUrl + $scope.webinar.videoPath;
         }
+        
         console.log('Final video URL with domain:', videoUrl);
         return videoUrl;
       }

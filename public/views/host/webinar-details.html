@@ -1,4 +1,16 @@
-<!-- Webinar Details Page -->
+<!-- Webinar Details Page - Cache Busted for Mobile -->
+<script>
+  // Prevent caching on mobile devices for this critical page
+  if (typeof document !== 'undefined') {
+    var meta = document.createElement('meta');
+    meta.httpEquiv = 'Cache-Control';
+    meta.content = 'no-cache, no-store, must-revalidate';
+    document.getElementsByTagName('head')[0].appendChild(meta);
+    
+    console.log('📱 Webinar Details Page: Cache control applied for mobile');
+  }
+</script>
+
 <div class="min-h-screen bg-gradient-to-b from-blue-900 to-blue-800">
   
   <!-- Loading State -->

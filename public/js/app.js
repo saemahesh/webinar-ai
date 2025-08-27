@@ -13,7 +13,11 @@ angular.module('webinarApp', ['ui.router'])
     // Default route
     $urlRouterProvider.otherwise('/');
     
-    // HTTP Interceptor for JWT tokens
+    // Cache busting for mobile devices
+    const cacheBuster = Date.now();
+    console.log('📱 AngularJS Cache buster:', cacheBuster);
+    
+    // HTTP Interceptor for JWT tokens and cache busting
     $httpProvider.interceptors.push(['$q', '$injector', function($q, $injector) {
       return {
         request: function(config) {
@@ -22,6 +26,23 @@ angular.module('webinarApp', ['ui.router'])
           if (token && config.url.startsWith('/api/')) {
             config.headers.Authorization = 'Bearer ' + token;
           }
+          
+          // Add cache busting for template requests and static resources
+          if (config.url.indexOf('.html') !== -1 || 
+              config.url.indexOf('.js') !== -1 || 
+              config.url.indexOf('.css') !== -1) {
+            
+            const separator = config.url.indexOf('?') === -1 ? '?' : '&';
+            config.url += separator + 'v=' + cacheBuster;
+            console.log('📱 Cache-busted URL:', config.url);
+          }
+          
+          // Prevent caching on mobile devices
+          config.headers = config.headers || {};
+          config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+          config.headers['Pragma'] = 'no-cache';
+          config.headers['Expires'] = '0';
+          
           return config;
         },
         

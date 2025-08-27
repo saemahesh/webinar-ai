@@ -8,6 +8,16 @@
     <!-- Base URL for HTML5 mode -->
     <base href="/">
     
+    <!-- Cache Control Meta Tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
+    <!-- Prevent Mobile Browser Caching -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📹</text></svg>">
     
@@ -71,7 +81,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/main.css">
+    <!-- CSS with Cache Busting -->
+    <script>
+        // Load CSS with cache busting
+        var cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.type = 'text/css';
+        cssLink.href = '/css/main.css?v=' + Date.now();
+        cssLink.onload = function() {
+            console.log('✅ CSS loaded (cache-busted): main.css');
+        };
+        document.head.appendChild(cssLink);
+    </script>
     
     <!-- Custom Styles -->
     <style>
@@ -231,23 +252,77 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="/js/app.js"></script>
-    <script src="/js/services/auth.service.js"></script>
-    <script src="/js/services/toast.service.js"></script>
-    <script src="/js/services/webinar.service.js"></script>
-    <script src="/js/directives/file-upload.directive.js"></script>
-    <script src="/js/controllers/nav.controller.js"></script>
-    <script src="/js/controllers/toast.controller.js"></script>
-    <script src="/js/controllers/home.controller.js"></script>
-    <script src="/js/controllers/login.controller.js"></script>
-    <script src="/js/controllers/register.controller.js"></script>
-    <script src="/js/controllers/admin.controller.js"></script>
-    <script src="/js/controllers/dashboard.controller.js"></script>
-    <script src="/js/controllers/webinar-details.controller.js"></script>
-    <script src="/js/controllers/join-webinar.controller.js"></script>
-    <script src="/js/controllers/webinar-room-simple.controller.js"></script>
-    <script src="/js/controllers/webinar-ended.controller.js"></script>
-    <!-- <script src="/js/controllers/host-control-panel.controller.js"></script> -->
+    <!-- JavaScript with Cache Busting -->
+    <script>
+        // Generate cache-busting timestamp for mobile devices
+        var cacheBuster = Date.now();
+        console.log('📱 Cache buster timestamp:', cacheBuster);
+        
+        // Register Service Worker for cache management
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('📱 Service Worker registered successfully:', registration.scope);
+                        
+                        // Force update on mobile devices
+                        registration.addEventListener('updatefound', function() {
+                            console.log('📱 Service Worker update found, forcing refresh');
+                            location.reload();
+                        });
+                    })
+                    .catch(function(error) {
+                        console.log('📱 Service Worker registration failed:', error);
+                    });
+            });
+            
+            // Clear cache on page focus (mobile app switching)
+            window.addEventListener('focus', function() {
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'CLEAR_CACHE'
+                    });
+                }
+            });
+        }
+    </script>
+    <script>
+        // Function to load scripts with cache busting
+        function loadScript(src) {
+            var script = document.createElement('script');
+            script.src = src + '?v=' + cacheBuster;
+            script.onload = function() {
+                console.log('✅ Loaded (cache-busted):', src);
+            };
+            script.onerror = function() {
+                console.error('❌ Failed to load:', src);
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Load all scripts with cache busting
+        var scripts = [
+            '/js/app.js',
+            '/js/services/auth.service.js',
+            '/js/services/toast.service.js',
+            '/js/services/webinar.service.js',
+            '/js/directives/file-upload.directive.js',
+            '/js/controllers/nav.controller.js',
+            '/js/controllers/toast.controller.js',
+            '/js/controllers/home.controller.js',
+            '/js/controllers/login.controller.js',
+            '/js/controllers/register.controller.js',
+            '/js/controllers/admin.controller.js',
+            '/js/controllers/dashboard.controller.js',
+            '/js/controllers/webinar-details.controller.js',
+            '/js/controllers/join-webinar.controller.js',
+            '/js/controllers/webinar-room-simple.controller.js',
+            '/js/controllers/webinar-ended.controller.js'
+        ];
+        
+        scripts.forEach(function(src) {
+            loadScript(src);
+        });
+    </script>
 </body>
 </html>

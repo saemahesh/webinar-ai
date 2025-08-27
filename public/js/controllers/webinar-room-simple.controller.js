@@ -27,8 +27,27 @@ angular.module('webinarApp')
       isLoading: false,
       hasStarted: false,
       calculatedStartTime: null,
-      lastPlayAttempt: 0
+      lastPlayAttempt: 0,
+      isRealMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && 
+                    ('ontouchstart' in window || navigator.maxTouchPoints > 0),
+      userInteracted: false
     };
+    
+    // Track user interaction for real mobile compliance
+    if ($scope.videoState.isRealMobile) {
+      console.log('📱 REAL MOBILE DEVICE: Setting up touch interaction tracking');
+      const trackUserInteraction = function() {
+        if (!$scope.videoState.userInteracted) {
+          $scope.videoState.userInteracted = true;
+          console.log('📱 REAL MOBILE: User interaction detected');
+        }
+      };
+      
+      // Listen for touch interactions anywhere on the page
+      document.addEventListener('touchstart', trackUserInteraction, { once: true });
+      document.addEventListener('touchend', trackUserInteraction, { once: true });
+      document.addEventListener('click', trackUserInteraction, { once: true });
+    }
     
     // Audio/Video controls (disabled by default)
     $scope.micEnabled = false;
@@ -661,29 +680,47 @@ angular.module('webinarApp')
       console.log('- currentTime before:', video.currentTime);
       console.log('- paused:', video.paused);
       
-      // Mobile-specific optimizations
+      // Real mobile device detection and optimization
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isRealMobile = isMobile && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
       const isAndroid = /Android/i.test(navigator.userAgent);
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       
-      if (isMobile) {
-        console.log('📱 Mobile device detected, applying mobile-first optimizations');
+      if (isRealMobile) {
+        console.log('📱 REAL MOBILE DEVICE detected - applying strict mobile compliance');
+        console.log('📱 Device details:', {
+          userAgent: navigator.userAgent,
+          touchSupport: 'ontouchstart' in window,
+          maxTouchPoints: navigator.maxTouchPoints,
+          isAndroid: isAndroid,
+          isIOS: isIOS
+        });
         
-        // Mobile-first approach: Set essential attributes
+        // Real mobile devices require stricter settings
         video.playsInline = true;
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
-        video.preload = 'auto'; // Changed to auto for better mobile loading
-        video.muted = true; // Start muted for autoplay compliance
+        video.muted = true; // MUST be muted for real mobile autoplay
+        video.preload = 'none'; // Conservative loading for real mobile
+        video.controls = false;
         
-        if (isAndroid) {
-          console.log('🤖 Android device: Applying Android-specific optimizations');
-          video.controls = false;
-          // Force reload on Android to prevent stale video state
-          if (video.readyState === 0) {
-            console.log('🔄 Android: Forcing video reload due to readyState 0');
-            video.load();
-          }
+        // iOS specific settings
+        if (isIOS) {
+          console.log('🍎 iOS device - applying iOS-specific settings');
+          video.setAttribute('muted', '');
+          video.defaultMuted = true;
         }
+        
+        // Android specific settings
+        if (isAndroid) {
+          console.log('🤖 Android device - applying Android-specific settings');
+          video.load(); // Force reload for Android
+        }
+      } else if (isMobile) {
+        console.log('� Desktop mobile simulation detected - applying standard mobile settings');
+        video.playsInline = true;
+        video.preload = 'auto';
+        video.muted = true;
       }
       
       // Calculate and set video time - simplified for mobile
@@ -709,20 +746,28 @@ angular.module('webinarApp')
         $scope.videoState.hasStarted = true;
       }
       
-      // Start video playback with mobile-optimized approach
+      // Enhanced video playback for real mobile devices
       const playPromise = video.play();
       
       if (playPromise !== undefined) {
         playPromise.then(function() {
           console.log('✅ Video play() succeeded');
           
-          // Mobile-specific post-play handling
-          if (isMobile) {
-            console.log('📱 Mobile: Video started successfully');
-            // Gradual unmute for mobile after successful play
+          // Real mobile device post-play handling
+          if (isRealMobile) {
+            console.log('📱 REAL MOBILE: Video started successfully');
+            // For real mobile, wait longer before unmuting to ensure stable playback
+            setTimeout(function() {
+              if (!video.paused) {
+                video.muted = false;
+                console.log('🔊 REAL MOBILE: Video unmuted after stable playback confirmed');
+              }
+            }, 500); // Longer delay for real mobile devices
+          } else if (isMobile) {
+            console.log('📱 Mobile simulation: Video started successfully');
             setTimeout(function() {
               video.muted = false;
-              console.log('🔊 Mobile: Video unmuted after successful play');
+              console.log('🔊 Mobile simulation: Video unmuted');
             }, 200);
           } else {
             console.log('🖥️ Desktop: Video started successfully');
@@ -746,15 +791,40 @@ angular.module('webinarApp')
             code: error.code
           });
           
-          if (isMobile) {
-            console.log('📱 Mobile play failed, trying recovery approach...');
-            // Mobile recovery: Try with different settings
+          if (isRealMobile) {
+            console.log('📱 REAL MOBILE play failed, trying aggressive recovery...');
+            // Real mobile requires more aggressive recovery
+            setTimeout(function() {
+              video.muted = true;
+              video.defaultMuted = true;
+              video.setAttribute('muted', '');
+              video.load();
+              setTimeout(function() {
+                console.log('📱 REAL MOBILE: Attempting recovery play...');
+                video.play().then(function() {
+                  console.log('✅ REAL MOBILE: Recovery play succeeded');
+                  setTimeout(function() {
+                    if (!video.paused) {
+                      video.muted = false;
+                      console.log('🔊 REAL MOBILE: Recovery unmute successful');
+                    }
+                  }, 1000);
+                }).catch(function(retryError) {
+                  console.error('❌ REAL MOBILE: Recovery play also failed:', retryError);
+                  // Show resume button for manual user interaction
+                  $scope.showResumeButton = true;
+                  $scope.$apply();
+                });
+              }, 1000);
+            }, 500);
+          } else if (isMobile) {
+            console.log('📱 Mobile simulation play failed, trying standard recovery...');
             setTimeout(function() {
               video.muted = true;
               video.load();
               setTimeout(function() {
                 video.play().catch(function(retryError) {
-                  console.error('❌ Mobile video recovery also failed:', retryError);
+                  console.error('❌ Mobile simulation recovery also failed:', retryError);
                 });
               }, 500);
             }, 1000);
@@ -903,17 +973,41 @@ angular.module('webinarApp')
         return;
       }
       
-      // Mobile device detection
+      // Enhanced mobile device detection for resume
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isRealMobile = isMobile && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
       const isAndroid = /Android/i.test(navigator.userAgent);
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       
-      if (isMobile) {
-        console.log('📱 Mobile resume - applying mobile optimizations');
+      if (isRealMobile) {
+        console.log('📱 REAL MOBILE resume - applying strict mobile compliance');
+        
+        // Real mobile devices need more conservative settings
         video.playsInline = true;
-        video.preload = 'metadata';
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
+        video.muted = true;
+        video.defaultMuted = true;
+        video.preload = 'none';
+        video.controls = false;
+        
+        if (isIOS) {
+          console.log('🍎 iOS resume - applying iOS-specific settings');
+          video.setAttribute('muted', '');
+        }
         
         if (isAndroid) {
-          console.log('🤖 Android resume - applying Android-specific fixes');
+          console.log('🤖 Android resume - forcing reload for Android devices');
+          video.load(); // Critical for Android
+        }
+      } else if (isMobile) {
+        console.log('📱 Mobile simulation resume - applying standard mobile settings');
+        video.playsInline = true;
+        video.preload = 'metadata';
+        video.muted = true;
+        
+        if (isAndroid) {
+          console.log('🤖 Android simulation resume - applying Android-specific fixes');
           video.controls = false;
         }
       }
@@ -936,30 +1030,41 @@ angular.module('webinarApp')
         console.log('🕐 Resuming video at time:', currentTime, 'seconds');
       }
       
-      // Start muted on mobile to ensure playback
-      if (isMobile) {
+      // Start muted for all mobile devices (real mobile requires this)
+      if (isRealMobile) {
         video.muted = true;
-        console.log('🔇 Starting muted for mobile resume');
+        video.defaultMuted = true;
+        console.log('🔇 REAL MOBILE: Starting muted with strict compliance');
+      } else if (isMobile) {
+        video.muted = true;
+        console.log('🔇 Mobile simulation: Starting muted for resume');
       } else {
         video.muted = false;
       }
-      
+
       video.play().then(() => {
         console.log('✅ Video resumed successfully');
         
-        // Unmute after successful play on mobile
-        if (isMobile) {
+        // Enhanced unmute strategy for real mobile devices
+        if (isRealMobile) {
+          setTimeout(function() {
+            if (!video.paused && video.readyState >= 2) {
+              video.muted = false;
+              console.log('🔊 REAL MOBILE: Video unmuted after confirmed stable playback');
+            } else {
+              console.log('⚠️ REAL MOBILE: Video not ready for unmute, staying muted');
+            }
+          }, 1000); // Longer delay for real mobile stability
+        } else if (isMobile) {
           setTimeout(function() {
             video.muted = false;
-            console.log('🔊 Video unmuted after successful mobile resume');
+            console.log('🔊 Mobile simulation: Video unmuted after successful resume');
           }, 100);
         }
         
         // Hide all other controls after resume
         $scope.hideOtherControlsAfterResume();
-        $scope.videoState.hasStarted = true;
-        
-      }).catch(error => {
+        $scope.videoState.hasStarted = true;      }).catch(error => {
         console.error('❌ Error resuming video:', error);
         // Show resume button again on error
         $scope.showResumeButton = true;
