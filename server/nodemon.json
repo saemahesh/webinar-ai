@@ -2,14 +2,14 @@
   "watch": [
     "server.js",
     "routes/",
-    "middleware/",
-    "data/"
+    "middleware/"
   ],
   "ext": "js,json",
   "ignore": [
     "node_modules/",
     "uploads/",
-    "public/"
+    "public/",
+    "data/"
   ],
   "verbose": true,
   "env": {

@@ -24,8 +24,7 @@ Read Mandatory instructions to follow on every iteration:
  once you fixed all issues listed below, run command 'echo "done fixing issues"' , after running it, read the issues.txt again and fix the issues
 --------------------------------------------------------
 **** Issue List ****
-if video length 1 hour ,but after reaching 30 minute mark
-it is showing webinar ended screen, fix it
+read full file, not half half portions
 
-why we have two controllers for webinar room , 
-remove unused one
+after reaching countdown zero,it should show lets go button - 
+lets button coming and auto hiding without me actually clicking to play video

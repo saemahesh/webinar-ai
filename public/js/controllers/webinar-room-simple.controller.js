@@ -21,6 +21,9 @@ angular.module('webinarApp')
     $scope.showResumeButton = false; // Resume button state
     $scope.hasUserResumed = false; // Track if user has manually resumed
     $scope.isVideoLoading = false; // ITERATION 3: Show connecting animation during video loading
+    $scope.videoMonitoringStarted = false; // ITERATION 0: Prevent duplicate video monitoring setup
+    $scope.webinarJustWentLive = false; // ITERATION 1: Track when webinar just transitioned to live for auto-start
+    $scope.liveMessageSent = false; // ITERATION 4: Prevent duplicate "We are live" chat messages
     
     // Video state management to prevent multiple downloads/plays
     $scope.videoState = {
@@ -194,21 +197,29 @@ angular.module('webinarApp')
             $scope.roomState.status = 'live';
             $scope.isWebinarLive = true;
             $scope.webinarStatus = 'live';
+            
+            // ITERATION 5: Set flag to indicate countdown just finished 
+            $scope.webinarJustWentLive = true;
+            
             stopCountdown();
-            // Give Angular a tick to render the <video>, then show resume button instead of auto-playing
+            // Give Angular a tick to render the <video>, then show "Let's Go" button
             $timeout(function() {
               if ($scope.webinar && $scope.webinar.videoPath) {
+                // ITERATION 5: Start loading animation now that video element will be rendered
+                $scope.isVideoLoading = true;
+                console.log('ITERATION 5: Starting video loading animation after countdown');
+                
                 // Set up video monitoring
                 $scope.setupVideoStateMonitoring();
                 
-                // Check if video is already playing before showing button
-                // Always show "Let's Go" button when countdown completes to ensure user interaction
-                // This allows users to unmute and properly start the video
-                console.log('🎬 Countdown complete - always showing "Let\'s Go" button for user interaction');
+                // Start video load check
+                $timeout($scope.checkVideoLoad, 100);
+                
+                // ITERATION 5: Show "Let's Go" button when countdown completes (as user requested)
+                console.log('🎬 ITERATION 5: Countdown complete - showing "Let\'s Go" button');
                 $scope.showResumeButton = true;
                 console.log('🎬 Current showResumeButton value:', $scope.showResumeButton);
-                console.log('🎬 Current roomState.status:', $scope.roomState.status);
-                console.log('🎬 Current isWebinarLive:', $scope.isWebinarLive);
+                console.log('🎬 Current isVideoLoading value:', $scope.isVideoLoading);
               }
             }, 300);
             return;
@@ -279,8 +290,9 @@ angular.module('webinarApp')
               const elapsedMinutes = Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60));
               
               // If webinar started and more than 30 minutes have passed (video duration)
-              if (now >= startTime && elapsedMinutes >= 30) {
-                console.log('Webinar/video has ended (30min), redirecting to ended page');
+              const webinarDurationMinutes = $scope.webinar.duration || 60;
+              if (now >= startTime && elapsedMinutes >= webinarDurationMinutes) {
+                console.log('Webinar/video has ended (' + webinarDurationMinutes + 'min), redirecting to ended page');
                 $scope.redirectToEndedPage();
                 return;
               }
@@ -321,8 +333,9 @@ angular.module('webinarApp')
               const elapsedMinutes = Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60));
               
               // If webinar started and more than 30 minutes have passed (video duration)
-              if (now >= startTime && elapsedMinutes >= 30) {
-                console.log('Webinar/video has ended (30min), redirecting to ended page');
+              const webinarDurationMinutes = $scope.webinar.duration || 60;
+              if (now >= startTime && elapsedMinutes >= webinarDurationMinutes) {
+                console.log('Webinar/video has ended (' + webinarDurationMinutes + 'min), redirecting to ended page');
                 $scope.redirectToEndedPage();
                 return;
               }
@@ -357,9 +370,10 @@ angular.module('webinarApp')
                   const startTime = new Date($scope.webinar.scheduledDate);
                   const elapsedMinutes = Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60));
                   
-                  // If webinar started and more than 30 minutes have passed (video duration)
-                  if (now >= startTime && elapsedMinutes >= 30) {
-                    console.log('Webinar/video has ended (30min), redirecting to ended page');
+                  // ITERATION 5: Use webinar scheduled duration instead of hardcoded 30 minutes
+                  const webinarDurationMinutes = $scope.webinar.duration || 60;
+                  if (now >= startTime && elapsedMinutes >= webinarDurationMinutes) {
+                    console.log('ITERATION 5: Webinar/video has ended (' + webinarDurationMinutes + 'min), redirecting to ended page');
                     $scope.redirectToEndedPage();
                     return;
                   }
@@ -474,9 +488,19 @@ angular.module('webinarApp')
           return;
         }
         
+    // ITERATION 1: Check if webinar is transitioning from waiting to live for auto-start
+    const wasWaiting = ($scope.roomState.status === 'waiting');
+    
     $scope.roomState.status = 'live';
     $scope.isWebinarLive = true;
     $scope.webinarStatus = 'live';
+    
+    // ITERATION 1: Set flag if this is the moment countdown just finished
+    if (wasWaiting) {
+      $scope.webinarJustWentLive = true;
+      console.log('ITERATION 1: Webinar just transitioned from waiting to live - will auto-start video');
+    }
+    
         console.log('Webinar is LIVE - started', Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60)), 'minutes ago');
         
         // Auto-play video when webinar goes live (handled later in initialize/start monitoring)
@@ -484,8 +508,15 @@ angular.module('webinarApp')
           if ($scope.webinar.videoPath && !$scope.videoError) {
             console.log('Webinar is live. Video will be started by initialize/monitor when element is present.');
             // No direct call here to avoid races before element exists
-      // Optional: announce go-live as system message
-      $scope.chatMessages.push({ sender: 'System', message: 'We are live. Thanks for joining!', timestamp: new Date(), isSystem: true });
+            
+      // ITERATION 4: Only send "We are live" message once to prevent duplicates
+      if (!$scope.liveMessageSent) {
+        $scope.chatMessages.push({ sender: 'System', message: 'We are live. Thanks for joining!', timestamp: new Date(), isSystem: true });
+        $scope.liveMessageSent = true;
+        console.log('ITERATION 4: Sent "We are live" message to chat');
+      } else {
+        console.log('ITERATION 4: Skipped duplicate "We are live" message');
+      }
           }
         }, 1000);
       } else {
@@ -702,33 +733,67 @@ angular.module('webinarApp')
     $scope.$watch('webinar.videoPath', function(newVal) {
       if (newVal) {
         console.log('Video path available, starting load check');
-        // ITERATION 3: Show connecting animation when video starts loading
-        $scope.isVideoLoading = true;
-        console.log('ITERATION 3: Set isVideoLoading = true (video URL assigned)');
+        
+        // ITERATION 7: Check if video loading should be blocked due to duration
+        if ($scope.webinar && $scope.webinar.scheduledDate) {
+          const webinarStartTime = new Date($scope.webinar.scheduledDate);
+          const currentTime = new Date();
+          const elapsedMinutes = (currentTime - webinarStartTime) / (1000 * 60);
+          const effectiveDurationMinutes = $scope.webinar.duration || 60;
+          
+          if (elapsedMinutes >= effectiveDurationMinutes) {
+            console.log('ITERATION 7: Video loading blocked - ' + effectiveDurationMinutes + ' minutes have passed since webinar start');
+            $scope.redirectToEndedPage();
+            return;
+          }
+        }
+        
+        // ITERATION 5: Only start loading animation if webinar is live (video element exists)
+        if ($scope.roomState.status === 'live') {
+          $scope.isVideoLoading = true;
+          console.log('ITERATION 5: Set isVideoLoading = true (video URL assigned and webinar is live)');
+          $timeout($scope.checkVideoLoad, 100);
+        } else {
+          console.log('ITERATION 5: Video path available but webinar not live yet, skipping loading animation');
+        }
         
         // Update cached URL for template
         $scope.videoUrl = $scope.getVideoUrl();
-        $timeout($scope.checkVideoLoad, 100);
       }
     });
     
     $scope.playVideo = function() {
       console.log('=== playVideo() called - MOBILE OPTIMIZED VERSION ===');
       
-      // ITERATION 8: Check if video should be blocked due to duration limit
-      if ($scope.webinar && $scope.webinar.scheduledStartTime) {
-        const webinarStartTime = new Date($scope.webinar.scheduledStartTime);
+      // ITERATION 7: Check if video should be blocked due to video duration reached
+      if ($scope.webinar && $scope.webinar.scheduledDate) {
+        const webinarStartTime = new Date($scope.webinar.scheduledDate);
         const currentTime = new Date();
         const elapsedMinutes = (currentTime - webinarStartTime) / (1000 * 60);
         
-        console.log('🚫 ITERATION 8 BLOCKING CHECK in playVideo():');
+        console.log('🚫 ITERATION 7 BLOCKING CHECK in playVideo():');
         console.log('- Webinar start time:', webinarStartTime);
         console.log('- Current time:', currentTime);
         console.log('- Elapsed minutes:', elapsedMinutes);
         
-        if (elapsedMinutes > 10) {
-          console.log('❌ BLOCKED: Video blocked - more than 10 minutes have passed since webinar start');
-          ToastService.error('This webinar video is no longer available for playback. The 10-minute viewing window has expired.');
+        // Check actual video duration first
+        const video = document.getElementById('webinarVideo');
+        let videoDurationMinutes = null;
+        if (video && video.duration && !isNaN(video.duration)) {
+          videoDurationMinutes = Math.floor(video.duration / 60);
+          console.log('- Video duration detected:', videoDurationMinutes, 'minutes');
+        }
+        
+        // Use video duration or webinar duration as fallback
+        const effectiveDurationMinutes = videoDurationMinutes || $scope.webinar.duration || 60;
+        console.log('- Effective duration:', effectiveDurationMinutes, 'minutes');
+        
+        if (elapsedMinutes >= effectiveDurationMinutes) {
+          console.log('❌ BLOCKED: Video blocked - ' + effectiveDurationMinutes + ' minutes have passed since webinar start');
+          ToastService.error('This webinar video is no longer available. The ' + effectiveDurationMinutes + '-minute viewing window has expired.');
+          
+          // Redirect to ended page
+          $scope.redirectToEndedPage();
           return;
         }
       }
@@ -987,20 +1052,35 @@ angular.module('webinarApp')
     $scope.resumeVideo = function() {
       console.log('🎬 Resume video clicked - MOBILE OPTIMIZED');
       
-      // ITERATION 8: Check if video should be blocked due to duration limit
-      if ($scope.webinar && $scope.webinar.scheduledStartTime) {
-        const webinarStartTime = new Date($scope.webinar.scheduledStartTime);
+      // ITERATION 7: Check if video should be blocked due to video duration reached
+      if ($scope.webinar && $scope.webinar.scheduledDate) {
+        const webinarStartTime = new Date($scope.webinar.scheduledDate);
         const currentTime = new Date();
         const elapsedMinutes = (currentTime - webinarStartTime) / (1000 * 60);
         
-        console.log('🚫 ITERATION 8 BLOCKING CHECK in resumeVideo():');
+        console.log('🚫 ITERATION 7 BLOCKING CHECK in resumeVideo():');
         console.log('- Webinar start time:', webinarStartTime);
         console.log('- Current time:', currentTime);
         console.log('- Elapsed minutes:', elapsedMinutes);
         
-        if (elapsedMinutes > 10) {
-          console.log('❌ BLOCKED: Video blocked - more than 10 minutes have passed since webinar start');
-          ToastService.error('This webinar video is no longer available for playback. The 10-minute viewing window has expired.');
+        // Check actual video duration first
+        const video = document.getElementById('webinarVideo');
+        let videoDurationMinutes = null;
+        if (video && video.duration && !isNaN(video.duration)) {
+          videoDurationMinutes = Math.floor(video.duration / 60);
+          console.log('- Video duration detected:', videoDurationMinutes, 'minutes');
+        }
+        
+        // Use video duration or webinar duration as fallback
+        const effectiveDurationMinutes = videoDurationMinutes || $scope.webinar.duration || 60;
+        console.log('- Effective duration:', effectiveDurationMinutes, 'minutes');
+        
+        if (elapsedMinutes >= effectiveDurationMinutes) {
+          console.log('❌ BLOCKED: Video blocked - ' + effectiveDurationMinutes + ' minutes have passed since webinar start');
+          ToastService.error('This webinar video is no longer available. The ' + effectiveDurationMinutes + '-minute viewing window has expired.');
+          
+          // Redirect to ended page
+          $scope.redirectToEndedPage();
           return;
         }
       }
@@ -1115,6 +1195,15 @@ angular.module('webinarApp')
         video.addEventListener('play', $scope.onVideoPlay);
         video.addEventListener('pause', $scope.onVideoPause);
         console.log('📺 Video state monitoring set up');
+        
+        // ITERATION 7: Removed auto-start logic - user wants "Let's Go" button to appear and wait for click
+        console.log('ITERATION 7: Video monitoring set up, waiting for user to click "Let\'s Go" button');
+      } else {
+        console.log('ITERATION 7: Video element not found, retrying in 200ms...');
+        // ITERATION 2: If video element not found, keep trying
+        $timeout(function() {
+          $scope.setupVideoStateMonitoring();
+        }, 200);
       }
     };
     
@@ -1459,44 +1548,60 @@ angular.module('webinarApp')
     // Initialize controller
     $scope.loadWebinar();
     
-    // Start periodic status checking for waiting webinars
+    // Start periodic status checking for waiting webinars and continuous monitoring during live
     $scope.startStatusMonitoring = function() {
-      if ($scope.roomState.status === 'waiting') {
-        // Use $interval for Angular digest and check every 1s near start time
-        const statusCheckInterval = $interval(function() {
-          $scope.checkWebinarStatus();
+      // ITERATION 0: Continue monitoring even after webinar goes live to check video duration
+      // Use $interval for Angular digest and check every 1s for status changes
+      const statusCheckInterval = $interval(function() {
+        $scope.checkWebinarStatus();
 
-          if ($scope.roomState.status === 'live') {
-            console.log('Webinar has gone live! Checking video state before showing button...');
-            $timeout(function() {
-              if ($scope.webinar && $scope.webinar.videoPath && !$scope.videoError) {
-                // Set up video monitoring
-                $scope.setupVideoStateMonitoring();
-                
+        // If webinar becomes live for first time, set up video monitoring
+        if ($scope.roomState.status === 'live' && !$scope.videoMonitoringStarted) {
+          console.log('Webinar has gone live! Checking video state before showing button...');
+          $scope.videoMonitoringStarted = true; // Prevent duplicate setup
+          
+          $timeout(function() {
+            if ($scope.webinar && $scope.webinar.videoPath && !$scope.videoError) {
+              // Set up video monitoring
+              $scope.setupVideoStateMonitoring();
+              
+              // ITERATION 6: Check if countdown just finished and show button
+              if ($scope.webinarJustWentLive) {
+                console.log('ITERATION 6: Countdown just finished, ensuring "Let\'s Go" button shows');
+                $scope.webinarJustWentLive = false; // Reset flag
+                $scope.showResumeButton = true; // Show button when countdown finishes
+              } else {
                 // Check if video is already playing before showing button
                 const video = document.getElementById('webinarVideo');
                 if (video && !video.paused) {
                   console.log('📺 Status monitoring: Video is already playing, not showing resume button');
                   $scope.showResumeButton = false;
                 } else {
-                  // Show resume button only if video is not playing
+                  // Show resume button only if video is not playing and countdown didn't just finish
                   console.log('📺 Status monitoring: Setting showResumeButton to true');
                   $scope.showResumeButton = true;
                   console.log('📺 Status monitoring: Current showResumeButton value:', $scope.showResumeButton);
                 }
               }
-            }, 300);
-            $interval.cancel(statusCheckInterval);
-          }
-        }, 1000);
+            }
+          }, 300);
+        }
+        
+        // ITERATION 7: Removed continuous auto-start check - user wants manual "Let's Go" button interaction
+        
+        // ITERATION 0: Don't cancel interval - keep checking for duration exceeded and ended status
+        if ($scope.roomState.status === 'ended') {
+          console.log('ITERATION 0: Webinar ended, stopping status monitoring');
+          $interval.cancel(statusCheckInterval);
+        }
+      }, 1000);
 
-        // Clear interval when leaving/destroying scope
-        $scope.$on('$destroy', function() {
-          if (statusCheckInterval) {
-            $interval.cancel(statusCheckInterval);
-          }
-        });
-      }
+      // Clear interval when leaving/destroying scope
+      $scope.$on('$destroy', function() {
+        if (statusCheckInterval) {
+          $interval.cancel(statusCheckInterval);
+        }
+      });
     };
     
     // Start monitoring after webinar loads

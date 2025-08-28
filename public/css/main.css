@@ -157,54 +157,54 @@ body:has(.webinar-room-container) nav#global-nav { display: none !important; }
   .control-panel-redesign .participant-count { display: flex !important; }
 }
 
-/* ITERATION 2: Hide native video controls completely */
-video::-webkit-media-controls {
+/* ITERATION 6: Hide native video controls only in webinar room page */
+.webinar-room-container video::-webkit-media-controls {
   display: none !important;
 }
 
-video::-webkit-media-controls-enclosure {
+.webinar-room-container video::-webkit-media-controls-enclosure {
   display: none !important;
 }
 
-video::-webkit-media-controls-panel {
+.webinar-room-container video::-webkit-media-controls-panel {
   display: none !important;
 }
 
-video::-webkit-media-controls-play-button {
+.webinar-room-container video::-webkit-media-controls-play-button {
   display: none !important;
 }
 
-video::-webkit-media-controls-timeline {
+.webinar-room-container video::-webkit-media-controls-timeline {
   display: none !important;
 }
 
-video::-webkit-media-controls-current-time-display {
+.webinar-room-container video::-webkit-media-controls-current-time-display {
   display: none !important;
 }
 
-video::-webkit-media-controls-time-remaining-display {
+.webinar-room-container video::-webkit-media-controls-time-remaining-display {
   display: none !important;
 }
 
-video::-webkit-media-controls-mute-button {
+.webinar-room-container video::-webkit-media-controls-mute-button {
   display: none !important;
 }
 
-video::-webkit-media-controls-volume-slider {
+.webinar-room-container video::-webkit-media-controls-volume-slider {
   display: none !important;
 }
 
-video::-webkit-media-controls-fullscreen-button {
+.webinar-room-container video::-webkit-media-controls-fullscreen-button {
   display: none !important;
 }
 
-/* For Firefox */
-video::-moz-media-controls {
+/* For Firefox - only in webinar room */
+.webinar-room-container video::-moz-media-controls {
   display: none !important;
 }
 
-/* Global video controls hiding */
-video[controls] {
+/* Webinar room specific video controls hiding */
+.webinar-room-container video[controls] {
   -webkit-appearance: none;
   appearance: none;
 }

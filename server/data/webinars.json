@@ -3,7 +3,7 @@
     "id": "5ab341c5-883f-4a20-ba5d-bfe884742d31",
     "title": "webinarr",
     "description": "webinarr deskpsdsd",
-    "scheduledDate": "2025-08-28T07:31:00.000Z",
+    "scheduledDate": "2025-08-28T08:25:00.000Z",
     "duration": 60,
     "maxAttendees": 100,
     "requireRegistration": true,
@@ -13,7 +13,7 @@
     "registrations": 38,
     "attendees": [],
     "createdAt": "2025-08-24T11:13:32.675Z",
-    "updatedAt": "2025-08-28T07:32:43.434Z",
+    "updatedAt": "2025-08-28T08:38:18.533Z",
     "videoFile": {
       "originalName": "mcp.mp4",
       "filename": "5ab341c5-883f-4a20-ba5d-bfe884742d31_1756225069882_mcp.mp4",
