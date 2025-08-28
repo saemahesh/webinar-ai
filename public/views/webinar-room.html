@@ -63,6 +63,16 @@
             </video>
           </div>
           
+          <!-- ITERATION 3: Connecting Animation for Video Loading -->
+          <div ng-if="isVideoLoading" class="connecting-overlay">
+            <div class="connecting-animation">
+              <div class="spinner"></div>
+              <div class="connecting-text">
+                <div class="connecting-title">Connecting...</div>
+              </div>
+            </div>
+          </div>
+          
           <!-- Resume Overlay (shows after refresh) -->
           <div ng-if="showResumeButton" class="resume-overlay">
             <button ng-click="resumeVideo()" class="resume-btn bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-full flex items-center space-x-3 text-xl font-semibold shadow-lg transition-all transform hover:scale-105">

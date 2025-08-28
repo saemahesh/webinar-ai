@@ -20,6 +20,7 @@ angular.module('webinarApp')
     $scope.isLeavingRoom = false; // Track if user is leaving
     $scope.showResumeButton = false; // Resume button state
     $scope.hasUserResumed = false; // Track if user has manually resumed
+    $scope.isVideoLoading = false; // ITERATION 3: Show connecting animation during video loading
     
     // Video state management to prevent multiple downloads/plays
     $scope.videoState = {
@@ -451,10 +452,21 @@ angular.module('webinarApp')
           return;
         }
         
-        // If no video duration available, estimate based on common pattern (30 minutes)
-        // This is a fallback for cases where video hasn't loaded yet
-        if (!videoDurationMinutes && elapsedMinutes >= 30) {
-          console.log('Estimated video duration (30 min) exceeded, treating webinar as ended');
+        // ITERATION 4: If no video duration available, use webinar scheduled duration as fallback
+        // This prevents premature ending when video duration is not yet detected
+        if (!videoDurationMinutes && $scope.webinar && $scope.webinar.duration) {
+          const scheduledDurationMinutes = $scope.webinar.duration;
+          if (elapsedMinutes >= scheduledDurationMinutes) {
+            console.log('ITERATION 4: Scheduled webinar duration (' + scheduledDurationMinutes + ' min) exceeded, treating webinar as ended');
+            $scope.roomState.status = 'ended';
+            $scope.isWebinarLive = false;
+            $scope.webinarStatus = 'ended';
+            $scope.redirectToEndedPage();
+            return;
+          }
+        } else if (!videoDurationMinutes && elapsedMinutes >= 60) {
+          // Ultimate fallback: 60 minutes if no video or webinar duration available
+          console.log('ITERATION 4: Ultimate fallback - 60 min exceeded, treating webinar as ended');
           $scope.roomState.status = 'ended';
           $scope.isWebinarLive = false;
           $scope.webinarStatus = 'ended';
@@ -634,6 +646,10 @@ angular.module('webinarApp')
           $scope.isVideoLoaded = true;
           $scope.videoError = false;
           
+          // ITERATION 3: Hide connecting animation when video is ready
+          $scope.isVideoLoading = false;
+          console.log('ITERATION 3: Set isVideoLoading = false (video ready)');
+          
           const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
           
           // Set video to correct time position for live simulation
@@ -686,8 +702,12 @@ angular.module('webinarApp')
     $scope.$watch('webinar.videoPath', function(newVal) {
       if (newVal) {
         console.log('Video path available, starting load check');
-  // Update cached URL for template
-  $scope.videoUrl = $scope.getVideoUrl();
+        // ITERATION 3: Show connecting animation when video starts loading
+        $scope.isVideoLoading = true;
+        console.log('ITERATION 3: Set isVideoLoading = true (video URL assigned)');
+        
+        // Update cached URL for template
+        $scope.videoUrl = $scope.getVideoUrl();
         $timeout($scope.checkVideoLoad, 100);
       }
     });
@@ -1545,6 +1565,10 @@ angular.module('webinarApp')
       
       $scope.videoError = true;
       $scope.isVideoLoaded = false;
+      
+      // ITERATION 3: Hide connecting animation on video error
+      $scope.isVideoLoading = false;
+      console.log('ITERATION 3: Set isVideoLoading = false (video error)');
       
       // Force scope update
       if (!$scope.$$phase) {

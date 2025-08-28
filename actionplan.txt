@@ -1,10 +1,46 @@
-ITERATION 0 - ACTION PLAN
-Iteration 1 plan:
-1) Controls not visible after resume - fixed resume overlay covering controls (bottom: 60px instead of 0).
-2) Explicitly enable controls in resumeVideo() function via JS (video.controls = true).
-3) Lowered resume overlay z-index from 1000 to 500 to prevent blocking controls.
-4) Next: if still not visible, check if video element is properly loaded and controls are supported.
-Goal: Make the webinar room control panel responsive on mobile; reduce oversized icons/buttons and spacing.
+ITERATION 4 ACTION PLAN
+
+CURRENT ISSUES:
+1. Video length 1 hour but shows "webinar ended" after 30 minutes
+2. Two controllers for webinar room - need to remove unused one
+
+SOLUTION IMPLEMENTED:
+
+ISSUE 1 - PREMATURE WEBINAR ENDING:
+1. IDENTIFIED ROOT CAUSE:
+   - Hardcoded 30-minute fallback in checkWebinarStatus function
+   - When video duration not detected, it assumed 30 minutes as default
+   - This caused 1-hour videos to end prematurely at 30-minute mark
+
+2. FIXED DURATION LOGIC:
+   - Replaced hardcoded 30-minute fallback with webinar scheduled duration
+   - First tries to use actual video duration (when available)
+   - Fallback 1: Use webinar.duration from schedule (e.g., 60 minutes)
+   - Fallback 2: Ultimate 60-minute limit if no duration info available
+   - Added debug logging to show which duration source is being used
+
+ISSUE 2 - DUPLICATE CONTROLLERS:
+1. IDENTIFIED CONTROLLERS:
+   - webinar-room.controller.js (unused)
+   - webinar-room-simple.controller.js (active)
+
+2. CLEANUP PERFORMED:
+   - Removed unused webinar-room.controller.js file
+   - Kept webinar-room-simple.controller.js as the single controller
+   - Previously updated index.html to load correct controller
+
+TECHNICAL DETAILS:
+- Duration logic now respects actual webinar scheduled duration
+- 1-hour webinars will now run for full 60 minutes instead of stopping at 30
+- Removed code duplication by eliminating unused controller file
+- Cleaner codebase with single webinar room controller
+
+EXPECTED RESULT:
+1. 1-hour videos will play for full duration without premature ending
+2. Single controller file reduces confusion and maintenance overhead
+3. Webinar ending logic now uses proper duration hierarchy: video > scheduled > 60min fallback
+
+STATUS: Waiting for feedback on iteration 4 fix
 
 Changes this iteration:
 - main.css: Tightened mobile styles for control buttons and badges

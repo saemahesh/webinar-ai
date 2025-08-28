@@ -24,4 +24,8 @@ Read Mandatory instructions to follow on every iteration:
  once you fixed all issues listed below, run command 'echo "done fixing issues"' , after running it, read the issues.txt again and fix the issues
 --------------------------------------------------------
 **** Issue List ****
-still can't see default video controls in webinar room page after resume
+if video length 1 hour ,but after reaching 30 minute mark
+it is showing webinar ended screen, fix it
+
+why we have two controllers for webinar room , 
+remove unused one
