@@ -850,7 +850,7 @@ input[ng-model="chat.newMessage"]:focus {
   .chat-input,
   .chat-disabled {
     position: sticky !important;
-    bottom: 0 !important;
+    bottom: 50px !important;
     background: linear-gradient(14deg, #070f23 0%, #041435 50%, #030e20 100%) !important;
     border-top: 1px solid #64748b !important;
     backdrop-filter: blur(15px) !important;
