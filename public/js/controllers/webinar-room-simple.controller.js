@@ -235,9 +235,13 @@ angular.module('webinarApp')
         if (!path) {
           return null;
         }
-        // If absolute (http/https), use as-is; else prefix with origin
-        var isAbsolute = /^https?:\/\//i.test(path);
-        var url = isAbsolute ? path : (window.location.origin + (path.startsWith('/') ? path : '/' + path));
+        
+        // ITERATION 1: Use streaming endpoint for chunked video delivery
+        // This enables range requests and prevents downloading entire video on seek
+        var streamingUrl = '/api/videos/public/' + $scope.webinarId + '/stream';
+        var url = window.location.origin + streamingUrl;
+        
+        console.log('ITERATION 1: Using streaming URL for chunked delivery:', url);
         return $sce.trustAsResourceUrl(url);
       } catch (e) {
         console.error('Error building video URL:', e);
@@ -691,6 +695,24 @@ angular.module('webinarApp')
     $scope.playVideo = function() {
       console.log('=== playVideo() called - MOBILE OPTIMIZED VERSION ===');
       
+      // ITERATION 8: Check if video should be blocked due to duration limit
+      if ($scope.webinar && $scope.webinar.scheduledStartTime) {
+        const webinarStartTime = new Date($scope.webinar.scheduledStartTime);
+        const currentTime = new Date();
+        const elapsedMinutes = (currentTime - webinarStartTime) / (1000 * 60);
+        
+        console.log('🚫 ITERATION 8 BLOCKING CHECK in playVideo():');
+        console.log('- Webinar start time:', webinarStartTime);
+        console.log('- Current time:', currentTime);
+        console.log('- Elapsed minutes:', elapsedMinutes);
+        
+        if (elapsedMinutes > 10) {
+          console.log('❌ BLOCKED: Video blocked - more than 10 minutes have passed since webinar start');
+          ToastService.error('This webinar video is no longer available for playback. The 10-minute viewing window has expired.');
+          return;
+        }
+      }
+      
       // Prevent multiple simultaneous play attempts
       const now = Date.now();
       if (now - $scope.videoState.lastPlayAttempt < 2000) {
@@ -944,6 +966,24 @@ angular.module('webinarApp')
     // Resume video functionality (for after refresh)
     $scope.resumeVideo = function() {
       console.log('🎬 Resume video clicked - MOBILE OPTIMIZED');
+      
+      // ITERATION 8: Check if video should be blocked due to duration limit
+      if ($scope.webinar && $scope.webinar.scheduledStartTime) {
+        const webinarStartTime = new Date($scope.webinar.scheduledStartTime);
+        const currentTime = new Date();
+        const elapsedMinutes = (currentTime - webinarStartTime) / (1000 * 60);
+        
+        console.log('🚫 ITERATION 8 BLOCKING CHECK in resumeVideo():');
+        console.log('- Webinar start time:', webinarStartTime);
+        console.log('- Current time:', currentTime);
+        console.log('- Elapsed minutes:', elapsedMinutes);
+        
+        if (elapsedMinutes > 10) {
+          console.log('❌ BLOCKED: Video blocked - more than 10 minutes have passed since webinar start');
+          ToastService.error('This webinar video is no longer available for playback. The 10-minute viewing window has expired.');
+          return;
+        }
+      }
       
       // Prevent multiple resume attempts
       const now = Date.now();

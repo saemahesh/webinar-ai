@@ -289,4 +289,74 @@ router.get('/:webinarId/stream', authenticate, (req, res) => {
   }
 });
 
+/**
+ * GET /api/videos/public/:webinarId/stream  
+ * Stream video for public webinar access (no auth required)
+ */
+router.get('/public/:webinarId/stream', (req, res) => {
+  try {
+    const webinarId = req.params.webinarId;
+    console.log('Public streaming video for webinar:', webinarId);
+    
+    // Find webinar (public access)
+    const webinars = readWebinars();
+    const webinar = webinars.find(w => w.id === webinarId);
+    
+    if (!webinar) {
+      return res.status(404).json({ error: 'Webinar not found' });
+    }
+    
+    if (!webinar.videoFile) {
+      return res.status(404).json({ error: 'No video file found for this webinar' });
+    }
+    
+    const videoPath = path.join(__dirname, '..', webinar.videoFile.path);
+    
+    if (!fs.existsSync(videoPath)) {
+      return res.status(404).json({ error: 'Video file not found on disk' });
+    }
+    
+    const stat = fs.statSync(videoPath);
+    const fileSize = stat.size;
+    const range = req.headers.range;
+    
+    if (range) {
+      // Handle range requests for video streaming with chunked delivery
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      // ITERATION 1: Optimize chunk size for better seeking performance
+      // Use 2MB chunks for faster seeking, but cap at file size
+      const defaultChunkSize = 2 * 1024 * 1024; // 2MB chunks
+      const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + defaultChunkSize - 1, fileSize - 1);
+      const chunksize = (end - start) + 1;
+      const file = fs.createReadStream(videoPath, { start, end });
+      const head = {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': webinar.videoFile.mimetype || 'video/mp4',
+        'Cache-Control': 'public, max-age=3600', // Cache chunks for 1 hour
+        'Connection': 'keep-alive', // Keep connection alive for better streaming
+      };
+      console.log(`ITERATION 1: Serving range ${start}-${end}/${fileSize} (${(chunksize / 1024 / 1024).toFixed(2)}MB chunk)`);
+      res.writeHead(206, head);
+      file.pipe(res);
+    } else {
+      // Send entire file with caching headers
+      const head = {
+        'Content-Length': fileSize,
+        'Content-Type': webinar.videoFile.mimetype || 'video/mp4',
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=3600',
+      };
+      res.writeHead(200, head);
+      fs.createReadStream(videoPath).pipe(res);
+    }
+    
+  } catch (error) {
+    console.error('Error streaming video:', error);
+    res.status(500).json({ error: 'Failed to stream video' });
+  }
+});
+
 module.exports = router;
