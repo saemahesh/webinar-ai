@@ -24,7 +24,7 @@ Read Mandatory instructions to follow on every iteration:
  once you fixed all issues listed below, run command 'echo "done fixing issues"' , after running it, read the issues.txt again and fix the issues
 --------------------------------------------------------
 **** Issue List ****
-read full file, not half half portions
+decrease height of video in mobile mode, some space is wasting 
+the video will be always in landscape mode
 
-after reaching countdown zero,it should show lets go button - 
-lets button coming and auto hiding without me actually clicking to play video
+now it is wasting lot more space (height)

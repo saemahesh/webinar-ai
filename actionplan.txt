@@ -1,53 +1,25 @@
-ITERATION 6 ACTION PLAN
+**Iteration 3 Action Plan**
 
-CURRENT ISSUE:
-- Video controls should be visible on webinar details page
-- Currently hidden globally on all pages due to iteration 2 changes
-- Need to scope video control hiding to webinar room page only
+**Previous Issue Status**: 
+❌ My previous fix made it worse - increased video height caused more wasted space
 
-ROOT CAUSE IDENTIFIED:
-- In iteration 2, added global CSS rules to hide video controls
-- Rules used generic "video" selector affecting all pages
-- Webinar details page needs to show controls for user interaction
-- Only webinar room page should have controls hidden
+**Current Issue to Fix**:
+- Decrease height of video in mobile mode, some space is wasting 
+- The video will be always in landscape mode
+- **NEW**: "now it is wasting lot more space (height)"
 
-SOLUTION IMPLEMENTED:
+**Problem Analysis**:
+- I increased video from 35vh → 50vh but that made it worse
+- Since videos are landscape, they don't need much vertical space in portrait mobile
+- Need to DECREASE video height significantly to minimize wasted space
+- Landscape videos in portrait containers will have black bars (letterboxing)
 
-1. IDENTIFIED PAGE-SPECIFIC SELECTOR:
-   - Webinar room page uses .webinar-room-container class
-   - This provides unique identifier to scope CSS rules
-   - Other pages (like webinar details) don't have this class
+**Solution**: 
+- Reduce video area height to around 25vh or even smaller (20vh)
+- Give chat area more space since that's more useful in portrait mobile
+- Keep landscape mode at 100vh (that's fine for landscape videos)
 
-2. UPDATED CSS SPECIFICITY:
-   - Changed all video control hiding rules from global to page-specific
-   - Added .webinar-room-container prefix to all selectors
-   - Examples:
-     * Old: video::-webkit-media-controls { display: none !important; }
-     * New: .webinar-room-container video::-webkit-media-controls { display: none !important; }
-
-3. COMPREHENSIVE SCOPE CHANGE:
-   - Updated webkit media controls (Chrome/Safari)
-   - Updated moz media controls (Firefox) 
-   - Updated appearance settings for video[controls]
-   - All rules now scoped to webinar room container only
-
-TECHNICAL DETAILS:
-- Video controls will be visible by default on all pages
-- Only webinar room page (.webinar-room-container) will hide controls
-- Webinar details page will show native video controls
-- Other pages with videos will have normal controls behavior
-
-EXPECTED RESULT:
-- Webinar details page: Video controls visible ✓
-- Webinar room page: Video controls hidden ✓  
-- Clean separation of control visibility by page context
-
-STATUS: Waiting for feedback on iteration 6 fix
-
-Changes this iteration:
-- main.css: Tightened mobile styles for control buttons and badges
-	- At <=768px: smaller ctrl-btn/control-button sizes and reduced gaps
-	- At <=640px: decreased padding, gap, and button sizes; tuned live/participant badges
+**Iteration Count**: 3
 	- At <=480px: ensured compact controls remain readable
 
 Next: Re-read issues.txt for updated feedback; verify HTML updates reflect due to template cache busting and no inline styles remain.

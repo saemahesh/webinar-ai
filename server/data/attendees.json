@@ -403,5 +403,25 @@
     "registeredAt": "2025-08-28T07:32:43.434Z",
     "status": "registered",
     "customFields": {}
+  },
+  {
+    "id": "f625ecaa-f963-4987-8d72-5807625a6a19",
+    "webinarId": "5ab341c5-883f-4a20-ba5d-bfe884742d31",
+    "name": "fgs",
+    "email": "jkgnkjn@fesg.gsr",
+    "company": "dgdb",
+    "registeredAt": "2025-08-28T11:14:23.446Z",
+    "status": "registered",
+    "customFields": {}
+  },
+  {
+    "id": "0cd48fe4-62ed-4e83-b9c7-51bb8de21086",
+    "webinarId": "5ab341c5-883f-4a20-ba5d-bfe884742d31",
+    "name": "jngkjn",
+    "email": "kjnjkn@fesg.gse",
+    "company": "kjgnerkgewn",
+    "registeredAt": "2025-08-28T11:15:46.577Z",
+    "status": "registered",
+    "customFields": {}
   }
 ]
